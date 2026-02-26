@@ -1,0 +1,39 @@
+{
+  "compilerOptions": {
+    "module": "commonjs",
+    "declaration": true,
+    "removeComments": true,
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "allowSyntheticDefaultImports": true,
+    "target": "ES2021",
+    "sourceMap": true,
+    "outDir": "./dist",
+    "baseUrl": "./",
+    "incremental": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    // Strict mode — required for production-grade type safety
+    "strict": true,
+    "strictNullChecks": true,
+    "noImplicitAny": true,
+    "strictBindCallApply": true,
+    "noImplicitReturns": true,
+    "noFallthroughCasesInSwitch": true,
+    // Path aliases — keeps imports clean across the codebase
+    "paths": {
+      "@modules/*": [
+        "src/modules/*"
+      ],
+      "@common/*": [
+        "src/common/*"
+      ],
+      "@infrastructure/*": [
+        "src/infrastructure/*"
+      ],
+      "@config/*": [
+        "src/config/*"
+      ]
+    }
+  }
+}
