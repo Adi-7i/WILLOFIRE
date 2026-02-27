@@ -21,8 +21,6 @@ import { PdfChunkRepository } from './repositories/pdf-chunk.repository';
             { name: Pdf.name, schema: PdfSchema },
             { name: PdfChunk.name, schema: PdfChunkSchema },
         ]),
-        // TODO (Phase 4): BullModule.registerQueue({ name: 'pdf-processing' })
-        // TODO (Phase 4): StorageModule
     ],
     controllers: [PdfController],
     providers: [
