@@ -2,8 +2,9 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { APP_GUARD } from '@nestjs/core';
 
-// Infrastructure
 import { DatabaseModule } from './infrastructure/database/database.module';
+import { RedisModule } from './infrastructure/redis/redis.module';
+import { QueueModule } from './infrastructure/queues/queue.module';
 import { StorageModule } from './infrastructure/storage/storage.module';
 
 // Feature modules
@@ -45,13 +46,10 @@ import {
     }),
 
     // ── Infrastructure ─────────────────────────────────────────────────────
-    // DatabaseModule establishes the Mongoose connection once for the whole app.
-    // Feature modules import only their own schemas via MongooseModule.forFeature().
     DatabaseModule,
-
-    // StorageModule provides STORAGE_TOKEN globally. Feature modules use it
-    // for file persistence without knowing the underlying provider (Azure).
+    RedisModule,
     StorageModule,
+    QueueModule,
 
     // ── Feature modules ────────────────────────────────────────────────────
     AuthModule,
@@ -59,9 +57,6 @@ import {
     McqModule,
     EvaluationModule,
     AiModule,
-
-    // TODO (Phase 2): RedisModule
-    // TODO (Phase 2): BullMQ queue modules
   ],
   providers: [
     // ── Global JWT guard ───────────────────────────────────────────────────
