@@ -4,6 +4,7 @@ import { APP_GUARD } from '@nestjs/core';
 
 // Infrastructure
 import { DatabaseModule } from './infrastructure/database/database.module';
+import { StorageModule } from './infrastructure/storage/storage.module';
 
 // Feature modules
 import { AuthModule } from './modules/auth/auth.module';
@@ -47,6 +48,10 @@ import {
     // DatabaseModule establishes the Mongoose connection once for the whole app.
     // Feature modules import only their own schemas via MongooseModule.forFeature().
     DatabaseModule,
+
+    // StorageModule provides STORAGE_TOKEN globally. Feature modules use it
+    // for file persistence without knowing the underlying provider (Azure).
+    StorageModule,
 
     // ── Feature modules ────────────────────────────────────────────────────
     AuthModule,

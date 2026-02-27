@@ -48,7 +48,12 @@ export const aiConfig = registerAs('ai', () => ({
     openaiApiKey: process.env.OPENAI_API_KEY,
 }));
 
-// ── Storage config (placeholder for Phase 2) ────────────────────────────────
+// ── Storage config ──────────────────────────────────────────────────────────
 export const storageConfig = registerAs('storage', () => ({
-    provider: process.env.STORAGE_PROVIDER ?? 'local',
+    provider: process.env.STORAGE_PROVIDER ?? 'azure',
+    azure: {
+        connectionString: process.env.AZURE_BLOB_CONNECTION_STRING ?? '',
+        container: process.env.AZURE_BLOB_CONTAINER_NAME ?? '',
+        sasExpiryHours: parseInt(process.env.BLOB_SAS_EXPIRY_HOURS ?? '24', 10),
+    },
 }));
