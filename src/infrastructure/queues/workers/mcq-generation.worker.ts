@@ -45,11 +45,11 @@ export class McqGenerationWorker implements OnModuleInit, OnApplicationShutdown 
         );
 
         this.worker.on('failed', (job, err) => {
-            this.logger.error(`Job [${job?.id}] failed:`, err);
+            this.logger.error(`MCQ Generation Job [${job?.id}] failed:`, err.message);
         });
 
         this.worker.on('error', (err) => {
-            this.logger.error('Worker experienced a general error:', err);
+            this.logger.error('MCQ Worker experienced a general error:', err);
         });
     }
 

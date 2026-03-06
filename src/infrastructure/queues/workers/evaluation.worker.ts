@@ -45,16 +45,16 @@ export class EvaluationWorker implements OnModuleInit, OnApplicationShutdown {
             },
             {
                 connection: this.redis,
-                concurrency: 3,
+                concurrency: 5,
             },
         );
 
         this.worker.on('failed', (job, err) => {
-            this.logger.error(`Job [${job?.id}] failed:`, err);
+            this.logger.error(`Evaluation Job [${job?.id}] failed:`, err.message);
         });
 
         this.worker.on('error', (err) => {
-            this.logger.error('Worker experienced a general error:', err);
+            this.logger.error('Evaluation Worker experienced a general error:', err);
         });
     }
 

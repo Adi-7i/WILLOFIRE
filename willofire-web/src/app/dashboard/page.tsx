@@ -1,0 +1,58 @@
+import { StatCard } from '@/components/shared/StatCard';
+import { ActivityFeed } from '@/components/shared/ActivityFeed';
+import { Sparkles } from 'lucide-react';
+
+export default function DashboardPage() {
+    return (
+        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+
+            {/* Header section with quote */}
+            <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight text-slate-900">
+                        Welcome back to Willofire
+                    </h1>
+                    <p className="text-slate-500 mt-2">
+                        Here's what's happening with your exam prep today.
+                    </p>
+                </div>
+
+                <div className="bg-amber-50 border border-amber-100 rounded-lg p-4 max-w-sm flex items-start gap-3 w-full md:w-auto">
+                    <Sparkles className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                    <p className="text-sm font-medium text-amber-900 italic">
+                        "Success is the sum of small efforts, repeated day in and day out."
+                    </p>
+                </div>
+            </div>
+
+            {/* Stats Row */}
+            <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+                <StatCard title="PDFs Uploaded" value="12" trend="+2 this week" icon="pdf" />
+                <StatCard title="Mock Tests Taken" value="8" trend="+1 this week" icon="mock" />
+                <StatCard title="Evaluations" value="24" trend="+5 this week" icon="evaluation" />
+                <StatCard title="PDF Questions" value="156" trend="+34 this week" icon="ask" />
+            </div>
+
+            {/* Main Content Area */}
+            <div className="grid gap-6 grid-cols-1 lg:grid-cols-3">
+                <div className="lg:col-span-2">
+                    <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-6 h-full min-h-[400px] flex flex-col items-center justify-center text-center">
+                        {/* Placeholder for future charting/activity visualization */}
+                        <div className="w-16 h-16 bg-blue-50 text-blue-500 rounded-full flex items-center justify-center mb-4">
+                            <Sparkles className="h-8 w-8" />
+                        </div>
+                        <h3 className="text-lg font-semibold text-slate-900">Performance Insights (Coming Soon)</h3>
+                        <p className="text-slate-500 max-w-sm mt-2 font-medium">
+                            We are analyzing your mock test scores to generate detailed insights and weak-area identification.
+                        </p>
+                    </div>
+                </div>
+
+                <div>
+                    <ActivityFeed />
+                </div>
+            </div>
+
+        </div>
+    );
+}
