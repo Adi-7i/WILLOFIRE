@@ -11,6 +11,7 @@ import {
 } from './queue.constants';
 import { PdfModule } from '../../modules/pdf/pdf.module';
 import { QueueService } from './queue.service';
+import { McqModule } from '../../modules/mcq/mcq.module';
 
 import { PdfProcessingWorker } from './workers/pdf-processing.worker';
 import { McqGenerationWorker } from './workers/mcq-generation.worker';
@@ -30,7 +31,7 @@ import { EvaluationWorker } from './workers/evaluation.worker';
  */
 @Global()
 @Module({
-    imports: [ConfigModule, RedisModule, PdfModule],
+    imports: [ConfigModule, RedisModule, PdfModule, McqModule],
     providers: [
         // ── BullMQ Queue Providers ────────────────────────────────────────────────
         {

@@ -26,6 +26,7 @@ export interface McqGenerationPayload {
     pdfId: string;
     userId: string;
     numQuestions: number;
+    difficulty: 'easy' | 'medium' | 'hard';
 }
 
 // Phase 7

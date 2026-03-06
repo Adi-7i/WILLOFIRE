@@ -7,6 +7,7 @@ import { McqTest, McqTestSchema } from './schemas/mcq-test.schema';
 import { McqAttempt, McqAttemptSchema } from './schemas/mcq-attempt.schema';
 import { McqTestRepository } from './repositories/mcq-test.repository';
 import { McqAttemptRepository } from './repositories/mcq-attempt.repository';
+import { PdfModule } from '../pdf/pdf.module';
 
 /**
  * McqModule — Phase 3 update.
@@ -21,7 +22,7 @@ import { McqAttemptRepository } from './repositories/mcq-attempt.repository';
             { name: McqTest.name, schema: McqTestSchema },
             { name: McqAttempt.name, schema: McqAttemptSchema },
         ]),
-        // TODO (Phase 4): AiModule for question generation
+        PdfModule,
     ],
     controllers: [McqController],
     providers: [
