@@ -13,9 +13,9 @@ interface SidebarProps {
 const NAV_ITEMS = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { name: 'My PDFs', href: '/dashboard/pdfs', icon: FileText },
-    { name: 'Ask PDF', href: '/dashboard/ask', icon: MessageSquare },
+    { name: 'Ask PDF', href: '/dashboard/ask-pdf', icon: MessageSquare },
     { name: 'Mock Tests', href: '/dashboard/mock-tests', icon: Files },
-    { name: 'Answer Evaluation', href: '/dashboard/evaluation', icon: CheckCircle },
+    { name: 'Answer Evaluation', href: '/dashboard/answer-evaluation', icon: CheckCircle },
     { name: 'Downloads', href: '/dashboard/downloads', icon: Download },
 ];
 
@@ -61,8 +61,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                                 key={item.name}
                                 href={item.href}
                                 className={`group flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${isActive
-                                        ? 'bg-[#2D4A7A] text-white'
-                                        : 'text-[#A9BAD0] hover:bg-white/5 hover:text-white'
+                                    ? 'bg-[#2D4A7A] text-white'
+                                    : 'text-[#A9BAD0] hover:bg-white/5 hover:text-white'
                                     }`}
                             >
                                 <Icon
