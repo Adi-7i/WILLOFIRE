@@ -1,0 +1,104 @@
+'use client';
+
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
+import Link from 'next/link';
+
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+
+import { registerSchema, RegisterFormValues } from '@/features/auth/schemas';
+import { useRegister } from '@/features/auth/useAuth';
+
+export default function SignupPage() {
+    const { mutate: register, isPending, error } = useRegister();
+
+    const form = useForm<RegisterFormValues>({
+        resolver: zodResolver(registerSchema),
+        defaultValues: {
+            email: '',
+            password: '',
+        },
+    });
+
+    const onSubmit = (data: RegisterFormValues) => {
+        register(data);
+    };
+
+    return (
+        <main className="flex min-h-screen items-center justify-center p-6 text-zinc-50">
+            <Card className="w-full max-w-sm rounded-xl border-zinc-800 bg-zinc-900 shadow-xl">
+                <CardHeader className="space-y-1 text-center">
+                    <CardTitle className="text-2xl font-semibold tracking-tight">Create an account</CardTitle>
+                    <CardDescription className="text-zinc-400">Join Willofire to start practicing</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <Form {...form}>
+                        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+                            <FormField
+                                control={form.control}
+                                name="email"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="text-zinc-200">Email</FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                placeholder="name@example.com"
+                                                type="email"
+                                                autoCapitalize="none"
+                                                autoComplete="email"
+                                                autoCorrect="off"
+                                                className="bg-zinc-950 border-zinc-800 focus-visible:ring-orange-500"
+                                                {...field}
+                                            />
+                                        </FormControl>
+                                        <FormMessage className="text-red-500" />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="password"
+                                render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel className="text-zinc-200">Password</FormLabel>
+                                        <FormControl>
+                                            <Input
+                                                type="password"
+                                                placeholder="••••••••"
+                                                autoComplete="new-password"
+                                                className="bg-zinc-950 border-zinc-800 focus-visible:ring-orange-500"
+                                                {...field}
+                                            />
+                                        </FormControl>
+                                        <FormMessage className="text-red-500" />
+                                    </FormItem>
+                                )}
+                            />
+
+                            {error && <div className="text-sm font-medium text-red-500 text-center">{error.message}</div>}
+
+                            <Button
+                                type="submit"
+                                className="w-full mt-2 bg-orange-500 hover:bg-orange-600 text-white font-medium"
+                                disabled={isPending}
+                            >
+                                {isPending ? 'Creating account...' : 'Sign up'}
+                            </Button>
+                        </form>
+                    </Form>
+                </CardContent>
+                <CardFooter className="flex justify-center text-sm text-zinc-400">
+                    <p>
+                        Already have an account?{' '}
+                        <Link href="/login" className="text-orange-500 hover:text-orange-400 transition-colors font-medium">
+                            Log in
+                        </Link>
+                    </p>
+                </CardFooter>
+            </Card>
+        </main>
+    );
+}
