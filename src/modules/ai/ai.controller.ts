@@ -1,36 +1,26 @@
 import { Controller, Post, Body } from '@nestjs/common';
 import { AiService } from './ai.service';
+import { PdfQaDto } from './dto/pdf-qa.dto';
 
 /**
- * AiController — THIN controller
+ * AiController
  *
- * Exposes internal AI capabilities as HTTP endpoints (useful for
- * admin/debug purposes and direct AI feature access).
- *
- * In most cases, other modules (McqModule, EvaluationModule) will
- * inject AiService directly rather than routing through HTTP.
+ * Exposes AI product features as HTTP endpoints.
+ * Note: We do NOT expose raw 'complete' or 'embed' functions here
+ * to prevent abuse. Each endpoint represents a specific product feature.
  */
 @Controller('ai')
 export class AiController {
     constructor(private readonly aiService: AiService) { }
 
     /**
-     * POST /api/v1/ai/complete
-     * Direct text completion endpoint.
-     * TODO (Phase 3): Add CompletionDto, rate limiting, admin guard
+     * POST /api/v1/ai/pdf-qa
+     * 
+     * Asks a question against the context of a specific uploaded PDF.
+     * Extracts relevant chunks, executes a versioned prompt, and returns the answer.
      */
-    @Post('complete')
-    async complete(@Body() body: unknown): Promise<unknown> {
-        return this.aiService.complete(body);
-    }
-
-    /**
-     * POST /api/v1/ai/embed
-     * Generate text embeddings for semantic search.
-     * TODO (Phase 3): Add EmbedDto
-     */
-    @Post('embed')
-    async embed(@Body() body: unknown): Promise<unknown> {
-        return this.aiService.embed(body);
+    @Post('pdf-qa')
+    async answerFromPdf(@Body() body: PdfQaDto) {
+        return this.aiService.answerFromPdf(body);
     }
 }

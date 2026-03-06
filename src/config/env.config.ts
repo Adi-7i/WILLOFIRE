@@ -31,6 +31,7 @@ export const redisConfig = registerAs('redis', () => ({
     host: process.env.REDIS_HOST ?? 'localhost',
     port: parseInt(process.env.REDIS_PORT ?? '6379', 10),
     password: process.env.REDIS_PASSWORD ?? undefined,
+    tls: process.env.REDIS_TLS ?? 'false',
 }));
 
 // ── JWT config ──────────────────────────────────────────────────────────────
@@ -46,6 +47,9 @@ export const jwtConfig = registerAs('jwt', () => ({
 // ── AI config (placeholder for Phase 3) ─────────────────────────────────────
 export const aiConfig = registerAs('ai', () => ({
     openaiApiKey: process.env.OPENAI_API_KEY,
+    model: process.env.OPENAI_MODEL ?? 'gpt-4o-mini',
+    embeddingModel: process.env.OPENAI_EMBEDDING_MODEL ?? 'text-embedding-3-small',
+    maxChunks: parseInt(process.env.AI_MAX_CHUNKS ?? '5', 10),
 }));
 
 // ── Storage config ──────────────────────────────────────────────────────────

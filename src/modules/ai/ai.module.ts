@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AiController } from './ai.controller';
 import { AiService } from './ai.service';
+import { PdfModule } from '../pdf/pdf.module';
 
 /**
  * AiModule
@@ -21,7 +22,7 @@ import { AiService } from './ai.service';
  */
 @Module({
     imports: [
-        // TODO (Phase 3): Configure AI provider client (OpenAI, Gemini etc.)
+        PdfModule,
     ],
     controllers: [AiController],
     providers: [AiService],

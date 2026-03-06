@@ -24,11 +24,13 @@ import { RedisService } from './redis.service';
                 const host = config.get<string>('redis.host') ?? 'localhost';
                 const port = config.get<number>('redis.port') ?? 6379;
                 const password = config.get<string>('redis.password');
+                const useTls = config.get<string>('redis.tls') === 'true';
 
                 return new Redis({
                     host,
                     port,
                     password,
+                    tls: useTls ? {} : undefined,
                     // Retry strategy prevents fatal crashes on boot if Redis is down
                     retryStrategy: (times) => Math.min(times * 50, 2000),
                     maxRetriesPerRequest: null, // Required by BullMQ
