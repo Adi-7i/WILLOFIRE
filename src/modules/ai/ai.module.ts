@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { AiController } from './ai.controller';
 import { AiService } from './ai.service';
 import { PdfModule } from '../pdf/pdf.module';
+import { PdfGeneratorModule } from '../pdf-generator/pdf-generator.module';
+import { ConfigModule } from '@nestjs/config';
 
 /**
  * AiModule
@@ -22,7 +24,9 @@ import { PdfModule } from '../pdf/pdf.module';
  */
 @Module({
     imports: [
+        ConfigModule,
         PdfModule,
+        PdfGeneratorModule,
     ],
     controllers: [AiController],
     providers: [AiService],

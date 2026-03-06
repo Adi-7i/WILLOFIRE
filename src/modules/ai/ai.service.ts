@@ -5,6 +5,11 @@ import { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
 import { PdfChunkRepository } from '../pdf/repositories/pdf-chunk.repository';
 import { PDF_QA_PROMPT } from './prompts/pdf-qa.prompt';
 import { PdfQaDto } from './dto/pdf-qa.dto';
+import { LongQuestionDto } from './dto/long-question.dto';
+import { LONG_QUESTION_PROMPT } from './prompts/long-question.prompt';
+import { PdfGeneratorService } from '../pdf-generator/pdf-generator.service';
+import { STORAGE_TOKEN, StorageService } from '../../infrastructure/storage/storage.interface';
+import { Inject } from '@nestjs/common';
 
 export interface AiCompletionResult {
     content: string;
@@ -28,6 +33,8 @@ export class AiService {
     constructor(
         private readonly configService: ConfigService,
         private readonly pdfChunkRepository: PdfChunkRepository,
+        private readonly pdfGeneratorService: PdfGeneratorService,
+        @Inject(STORAGE_TOKEN) private readonly storageService: StorageService,
     ) {
         const apiKey = this.configService.get<string>('ai.openaiApiKey');
 
@@ -148,5 +155,70 @@ export class AiService {
             promptVersion: PDF_QA_PROMPT.version,
             tokensUsed: result.tokensUsed,
         };
+    }
+
+    /**
+     * POST /api/v1/ai/long-question/download
+     * Implements Phase 10 Step 10.2: AI-generated Long Question PDF download.
+     */
+    async generateLongQuestionPdf(dto: LongQuestionDto): Promise<{ downloadUrl: string }> {
+        const { pdfId, count, marks } = dto;
+        this.logger.log(`Generating ${count} long questions (${marks} marks each) for PDF ${pdfId}`);
+
+        // 1. Fetch chunks in reading order
+        const chunks = await this.pdfChunkRepository.findByPdfId(pdfId);
+
+        if (!chunks || chunks.length === 0) {
+            throw new InternalServerErrorException('No text chunks found for this PDF. Is it still processing?');
+        }
+
+        // 2. Select chunks (Naive approach: first 10 chunks to get enough context for questions)
+        const maxChunks = 10;
+        const selectedChunks = chunks.slice(0, maxChunks);
+
+        const contextString = selectedChunks.map(c => c.content).join('\n\n');
+
+        // 3. Render prompt
+        const userPrompt = LONG_QUESTION_PROMPT.render({
+            context: contextString,
+            count,
+            marks,
+        });
+
+        const messages: ChatCompletionMessageParam[] = [
+            { role: 'system', content: LONG_QUESTION_PROMPT.system },
+            { role: 'user', content: userPrompt },
+        ];
+
+        // 4. Generate completion
+        const result = await this.generateCompletion(messages);
+
+        // 5. Parse JSON
+        let questions: { text: string; marks: number }[] = [];
+        try {
+            // Scrub markdown fences just in case the AI ignored instructions
+            let jsonString = result.content.trim();
+            if (jsonString.startsWith('```json')) {
+                jsonString = jsonString.slice(7, -3).trim();
+            } else if (jsonString.startsWith('```')) {
+                jsonString = jsonString.slice(3, -3).trim();
+            }
+            questions = JSON.parse(jsonString);
+        } catch (error) {
+            this.logger.error(`Failed to parse AI JSON response: ${result.content}`);
+            throw new InternalServerErrorException('AI returned invalid question format');
+        }
+
+        // 6. Generate PDF Buffer
+        const pdfBuffer = await this.pdfGeneratorService.generateLongQuestionPdf(
+            `Subjective Assignment (${marks} marks/Q)`,
+            questions
+        );
+
+        // 7. Upload to Azure
+        const fileName = `subjective-${Date.now()}.pdf`;
+        const uploadResult = await this.storageService.uploadFile(pdfBuffer, fileName, 'application/pdf', 'generated');
+
+        return { downloadUrl: uploadResult.publicUrl };
     }
 }

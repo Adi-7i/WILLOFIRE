@@ -5,6 +5,9 @@ import { QueueService } from '../../infrastructure/queues/queue.service';
 import { McqTestRepository } from './repositories/mcq-test.repository';
 import { McqAttemptRepository } from './repositories/mcq-attempt.repository';
 import { SubmitMcqDto } from './dto/submit-mcq.dto';
+import { PdfGeneratorService } from '../pdf-generator/pdf-generator.service';
+import { STORAGE_TOKEN, StorageService } from '../../infrastructure/storage/storage.interface';
+import { Inject } from '@nestjs/common';
 
 /**
  * McqService — MCQ business logic
@@ -24,6 +27,8 @@ export class McqService {
         private readonly queueService: QueueService,
         private readonly mcqTestRepository: McqTestRepository,
         private readonly mcqAttemptRepository: McqAttemptRepository,
+        private readonly pdfGeneratorService: PdfGeneratorService,
+        @Inject(STORAGE_TOKEN) private readonly storageService: StorageService,
     ) { }
 
     async generate(dto: GenerateMcqDto, userId: string): Promise<any> {
@@ -118,5 +123,33 @@ export class McqService {
             incorrect,
             results,
         };
+    }
+
+    async downloadTestPdf(testId: string, userId: string): Promise<{ downloadUrl: string }> {
+        this.logger.log(`downloadTestPdf() called by User: ${userId} for Test: ${testId}`);
+
+        const test = await this.findOne(testId, userId);
+
+        const pdfBuffer = await this.pdfGeneratorService.generateMcqTestPdf(test);
+
+        const fileName = `test-${test._id}-${Date.now()}.pdf`;
+        const uploadResult = await this.storageService.uploadFile(pdfBuffer, fileName, 'application/pdf', 'generated');
+
+        // Azure Blobs generated here don't have public ACLs generally for offline files, get SAS directly
+        // If they do depending on Phase 4 config, returning publicUrl is fine.
+        return { downloadUrl: uploadResult.publicUrl };
+    }
+
+    async downloadAnswerKeyPdf(testId: string, userId: string): Promise<{ downloadUrl: string }> {
+        this.logger.log(`downloadAnswerKeyPdf() called by User: ${userId} for Test: ${testId}`);
+
+        const test = await this.findOne(testId, userId);
+
+        const pdfBuffer = await this.pdfGeneratorService.generateMcqAnswerKeyPdf(test);
+
+        const fileName = `answer-key-${test._id}-${Date.now()}.pdf`;
+        const uploadResult = await this.storageService.uploadFile(pdfBuffer, fileName, 'application/pdf', 'generated');
+
+        return { downloadUrl: uploadResult.publicUrl };
     }
 }

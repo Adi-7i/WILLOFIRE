@@ -8,6 +8,7 @@ import { McqAttempt, McqAttemptSchema } from './schemas/mcq-attempt.schema';
 import { McqTestRepository } from './repositories/mcq-test.repository';
 import { McqAttemptRepository } from './repositories/mcq-attempt.repository';
 import { PdfModule } from '../pdf/pdf.module';
+import { PdfGeneratorModule } from '../pdf-generator/pdf-generator.module';
 
 /**
  * McqModule — Phase 3 update.
@@ -23,6 +24,7 @@ import { PdfModule } from '../pdf/pdf.module';
             { name: McqAttempt.name, schema: McqAttemptSchema },
         ]),
         PdfModule,
+        PdfGeneratorModule,
     ],
     controllers: [McqController],
     providers: [

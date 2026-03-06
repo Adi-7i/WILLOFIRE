@@ -1,6 +1,7 @@
 import { Controller, Post, Body } from '@nestjs/common';
 import { AiService } from './ai.service';
 import { PdfQaDto } from './dto/pdf-qa.dto';
+import { LongQuestionDto } from './dto/long-question.dto';
 
 /**
  * AiController
@@ -22,5 +23,16 @@ export class AiController {
     @Post('pdf-qa')
     async answerFromPdf(@Body() body: PdfQaDto) {
         return this.aiService.answerFromPdf(body);
+    }
+
+    /**
+     * POST /api/v1/ai/long-question/download
+     * 
+     * Generates a printable PDF filled with subjective questions based on PDF context
+     * using the LongQuestion prompt matrix, providing writing space buffers natively.
+     */
+    @Post('long-question/download')
+    async downloadLongQuestions(@Body() body: LongQuestionDto) {
+        return this.aiService.generateLongQuestionPdf(body);
     }
 }

@@ -57,4 +57,28 @@ export class McqController {
     ) {
         return this.mcqService.submit(testId, body, user.id);
     }
+
+    /**
+     * GET /api/v1/mcq/:testId/download
+     * Downloads an offline-ready PDF containing the full test rubric structure.
+     */
+    @Get(':testId/download')
+    async download(
+        @Param('testId') testId: string,
+        @CurrentUser() user: any,
+    ) {
+        return this.mcqService.downloadTestPdf(testId, user.id);
+    }
+
+    /**
+     * GET /api/v1/mcq/:testId/download-answer-key
+     * Downloads an offline-ready Answer Key with correct hints and rationale formatting.
+     */
+    @Get(':testId/download-answer-key')
+    async downloadAnswerKey(
+        @Param('testId') testId: string,
+        @CurrentUser() user: any,
+    ) {
+        return this.mcqService.downloadAnswerKeyPdf(testId, user.id);
+    }
 }
