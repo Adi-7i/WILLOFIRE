@@ -11,18 +11,17 @@ import {
     SelectTrigger,
     SelectValue,
 } from '@/components/ui/select';
-import { DUMMY_PDFS } from '@/types/pdf';
+import { PdfListItem } from '@/lib/api/types';
 
 interface QuestionPanelProps {
     onAsk: (question: string, pdfId: string) => void;
     isLoading: boolean;
+    readyPdfs: PdfListItem[];
 }
 
-export function QuestionPanel({ onAsk, isLoading }: QuestionPanelProps) {
+export function QuestionPanel({ onAsk, isLoading, readyPdfs }: QuestionPanelProps) {
     const [question, setQuestion] = useState('');
     const [selectedPdf, setSelectedPdf] = useState<string>('');
-
-    const readyPdfs = DUMMY_PDFS.filter((p) => p.status === 'ready');
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -50,7 +49,7 @@ export function QuestionPanel({ onAsk, isLoading }: QuestionPanelProps) {
                         <SelectContent>
                             {readyPdfs.map((pdf) => (
                                 <SelectItem key={pdf.id} value={pdf.id}>
-                                    {pdf.name}
+                                    {pdf.originalName}
                                 </SelectItem>
                             ))}
                         </SelectContent>
@@ -70,7 +69,7 @@ export function QuestionPanel({ onAsk, isLoading }: QuestionPanelProps) {
 
                 <Button
                     type="submit"
-                    disabled={!question.trim() || !selectedPdf || isLoading}
+                    disabled={!question.trim() || !selectedPdf || isLoading || readyPdfs.length === 0}
                     className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-medium"
                 >
                     {isLoading ? (

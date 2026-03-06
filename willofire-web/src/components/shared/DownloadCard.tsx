@@ -4,10 +4,13 @@ import { Button } from '@/components/ui/button';
 export type DownloadCategory = 'mock-test' | 'answer-key' | 'long-question';
 
 interface DownloadCardProps {
+    id: string;
     title: string;
     category: DownloadCategory;
     date: string;
-    size: string;
+    size?: string;
+    onDownload: (id: string) => void;
+    isDownloading: boolean;
 }
 
 const categoryConfig = {
@@ -16,7 +19,7 @@ const categoryConfig = {
     'long-question': { label: 'Long Question', badgeClass: 'bg-amber-100 text-amber-700' },
 };
 
-export function DownloadCard({ title, category, date, size }: DownloadCardProps) {
+export function DownloadCard({ id, title, category, date, size, onDownload, isDownloading }: DownloadCardProps) {
     const config = categoryConfig[category];
 
     return (
@@ -39,7 +42,7 @@ export function DownloadCard({ title, category, date, size }: DownloadCardProps)
                     </div>
                     <div className="flex items-center text-xs text-slate-500 gap-2">
                         <HardDrive className="w-3.5 h-3.5" />
-                        <span>{size}</span>
+                        <span>{size ?? 'Generated on demand'}</span>
                     </div>
                 </div>
             </div>
@@ -48,9 +51,11 @@ export function DownloadCard({ title, category, date, size }: DownloadCardProps)
                 <Button
                     variant="outline"
                     className="w-full justify-center gap-2 border-slate-200 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                    onClick={() => onDownload(id)}
+                    disabled={isDownloading}
                 >
                     <FileDown className="w-4 h-4" />
-                    Download PDF
+                    {isDownloading ? 'Preparing...' : 'Download PDF'}
                 </Button>
             </div>
         </div>

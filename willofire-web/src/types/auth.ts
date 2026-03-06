@@ -5,6 +5,7 @@ export interface UserDetails {
 
 export interface AuthResponse {
     accessToken: string;
+    refreshToken: string;
     user?: UserDetails;
 }
 
