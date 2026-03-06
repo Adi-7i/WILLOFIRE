@@ -1,4 +1,4 @@
-import { Injectable, Logger, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, Logger, InternalServerErrorException, RequestTimeoutException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 import { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
@@ -46,7 +46,7 @@ export class AiService {
         this.defaultModel = this.configService.get<string>('ai.model') ?? 'gpt-4o-mini';
         this.defaultEmbeddingModel = this.configService.get<string>('ai.embeddingModel') ?? 'text-embedding-3-small';
 
-        this.logger.log(`AiService initialized. Default model: ${this.defaultModel}`);
+        this.logger.log(`AiService initialized.Default model: ${this.defaultModel} `);
     }
 
     /**
@@ -60,23 +60,35 @@ export class AiService {
         const model = modelOverride || this.defaultModel;
 
         try {
-            const response = await this.openai.chat.completions.create({
+            this.logger.debug(`Sending ${messages.length} messages to model ${model}...`);
+            this.logger.debug(`Prompt Content: ${messages[messages.length - 1].content} `);
+
+            const AI_TIMEOUT_MS = 30_000;
+            const apiCall = this.openai.chat.completions.create({
                 model,
                 messages,
-                temperature: 0.1, // Low temp for deterministic Q&A by default
+                temperature: 0.2, // Low temperature for factual output
+                max_tokens: 1500, // Sufficient for long answers
             });
+
+            const timeoutPromise = new Promise<never>((_, reject) =>
+                setTimeout(() => reject(new RequestTimeoutException('AI request timed out after 30 seconds')), AI_TIMEOUT_MS)
+            );
+
+            // @ts-ignore
+            const response = await Promise.race([apiCall, timeoutPromise]) as OpenAI.Chat.Completions.ChatCompletion;
 
             const content = response.choices[0]?.message?.content || '';
             const tokensUsed = response.usage?.total_tokens || 0;
 
-            this.logger.debug(`generateCompletion success. Model: ${model}, Tokens: ${tokensUsed}`);
+            this.logger.debug(`generateCompletion success.Model: ${model}, Tokens: ${tokensUsed} `);
 
             return {
                 content,
                 tokensUsed,
             };
         } catch (error) {
-            this.logger.error(`AI completion failed: ${(error as Error).message}`, (error as Error).stack);
+            this.logger.error(`AI completion failed: ${(error as Error).message} `, (error as Error).stack);
             throw new InternalServerErrorException('Failed to generate AI response');
         }
     }
@@ -100,7 +112,7 @@ export class AiService {
 
             return vector;
         } catch (error) {
-            this.logger.error(`AI embedding failed: ${(error as Error).message}`, (error as Error).stack);
+            this.logger.error(`AI embedding failed: ${(error as Error).message} `, (error as Error).stack);
             throw new InternalServerErrorException('Failed to generate AI embedding');
         }
     }
@@ -163,7 +175,7 @@ export class AiService {
      */
     async generateLongQuestionPdf(dto: LongQuestionDto): Promise<{ downloadUrl: string }> {
         const { pdfId, count, marks } = dto;
-        this.logger.log(`Generating ${count} long questions (${marks} marks each) for PDF ${pdfId}`);
+        this.logger.log(`Generating ${count} long questions(${marks} marks each) for PDF ${pdfId}`);
 
         // 1. Fetch chunks in reading order
         const chunks = await this.pdfChunkRepository.findByPdfId(pdfId);

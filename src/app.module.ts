@@ -13,6 +13,7 @@ import { PdfModule } from './modules/pdf/pdf.module';
 import { McqModule } from './modules/mcq/mcq.module';
 import { EvaluationModule } from './modules/evaluation/evaluation.module';
 import { AiModule } from './modules/ai/ai.module';
+import { HealthModule } from './modules/health/health.module';
 
 // Global guard
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
@@ -57,6 +58,7 @@ import {
     McqModule,
     EvaluationModule,
     AiModule,
+    HealthModule,
   ],
   providers: [
     // ── Global JWT guard ───────────────────────────────────────────────────
