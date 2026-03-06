@@ -1,5 +1,20 @@
-import { Controller, Post, Get, Param, Body } from '@nestjs/common';
+import {
+    Controller,
+    Post,
+    Get,
+    Param,
+    Body,
+    UseInterceptors,
+    UploadedFile,
+    ParseFilePipe,
+    MaxFileSizeValidator,
+    FileTypeValidator,
+    BadRequestException,
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
 import { EvaluationService } from './evaluation.service';
+import { SubmitAnswerDto } from './dto/submit-answer.dto';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 /**
  * EvaluationController — THIN controller
@@ -11,21 +26,38 @@ export class EvaluationController {
 
     /**
      * POST /api/v1/evaluation/submit
-     * Submit user answers and receive graded results.
-     * TODO (Phase 2): Accept SubmitAnswersDto
+     * Submit user answers and receive queued job ID.
      */
     @Post('submit')
-    async submit(@Body() body: unknown): Promise<unknown> {
-        return this.evaluationService.submit(body);
+    @UseInterceptors(FileInterceptor('file'))
+    async submit(
+        @Body() body: SubmitAnswerDto,
+        @UploadedFile(
+            new ParseFilePipe({
+                validators: [
+                    new MaxFileSizeValidator({ maxSize: 10 * 1024 * 1024 }), // 10MB
+                    new FileTypeValidator({ fileType: '.(png|jpeg|jpg|pdf)' }),
+                ],
+                fileIsRequired: false, // Could be just text later, but for Phase 9 we focus on OCR files
+            }),
+        )
+        file: Express.Multer.File,
+        @CurrentUser() user: any,
+    ) {
+        if (!file && !body.questionRef) {
+            throw new BadRequestException('Must provide either a file or a valid question reference');
+        }
+
+        return this.evaluationService.submit(body, file, user.id);
     }
 
     /**
-     * GET /api/v1/evaluation/results/:attemptId
-     * Get the full result report for a quiz attempt.
+     * GET /api/v1/evaluation/results/:submissionId
+     * Get the newest evaluated rubric for a given submission.
      */
-    @Get('results/:attemptId')
-    async getResult(@Param('attemptId') attemptId: string): Promise<unknown> {
-        return this.evaluationService.getResult(attemptId);
+    @Get('results/:submissionId')
+    async getResult(@Param('submissionId') submissionId: string): Promise<unknown> {
+        return this.evaluationService.getResult(submissionId);
     }
 
     /**

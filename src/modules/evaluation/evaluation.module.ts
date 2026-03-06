@@ -13,6 +13,8 @@ import {
 } from './schemas/evaluation-result.schema';
 import { AnswerSubmissionRepository } from './repositories/answer-submission.repository';
 import { EvaluationResultRepository } from './repositories/evaluation-result.repository';
+import { StorageModule } from '../../infrastructure/storage/storage.module';
+import { AiModule } from '../ai/ai.module';
 
 /**
  * EvaluationModule — Phase 3 update.
@@ -27,7 +29,8 @@ import { EvaluationResultRepository } from './repositories/evaluation-result.rep
             { name: AnswerSubmission.name, schema: AnswerSubmissionSchema },
             { name: EvaluationResult.name, schema: EvaluationResultSchema },
         ]),
-        // TODO (Phase 5): AiModule for AI-powered evaluation
+        StorageModule,
+        AiModule,
     ],
     controllers: [EvaluationController],
     providers: [
