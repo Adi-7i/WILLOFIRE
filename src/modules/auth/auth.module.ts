@@ -8,34 +8,25 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { User, UserSchema } from './schemas/user.schema';
+import { UserRepository } from './repositories/user.repository';
 
 /**
  * AuthModule — owns the entire authentication domain.
  *
- * JwtModule is registered with registerAsync so ConfigService is
- * available before the module initializes — avoids the env-var race condition.
- *
- * PassportModule sets 'jwt' as the default strategy so JwtAuthGuard
- * doesn't need to name it explicitly in every usage.
+ * Phase 3 addition:
+ *  - UserRepository is now a provider and exported so other modules
+ *    (e.g. a future ProfileModule) can query user records without
+ *    depending on AuthService.
  */
 @Module({
     imports: [
-        // Register the User schema scoped to this module only.
-        // Other modules never access the User model directly — they go through AuthService.
         MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
-
-        // Passport with JWT as the default strategy
         PassportModule.register({ defaultStrategy: 'jwt' }),
-
-        // JwtModule configured asynchronously via ConfigService.
-        // We set the default signing options here (access token).
-        // Refresh token uses different secrets — signed explicitly in AuthService.
         JwtModule.registerAsync({
             imports: [ConfigModule],
             inject: [ConfigService],
             useFactory: (config: ConfigService) => ({
-                // Only set the secret here. expiresIn is passed explicitly in each
-                // signAsync() call in AuthService to support dual-token signing.
+                // Only secret here — expiresIn passed explicitly per signAsync call
                 secret: config.get<string>('jwt.secret') ?? '',
             }),
         }),
@@ -43,11 +34,13 @@ import { User, UserSchema } from './schemas/user.schema';
     controllers: [AuthController],
     providers: [
         AuthService,
-        JwtStrategy, // Must be a provider so Passport discovers it
+        JwtStrategy,
+        UserRepository, // Phase 3: repository layer
     ],
     exports: [
         AuthService,
-        JwtModule,  // Exported so other modules can use JwtService (e.g. sockets in Phase 4)
+        JwtModule,      // Other modules can use JwtService (e.g. websockets)
+        UserRepository, // Cross-module user lookups
     ],
 })
 export class AuthModule { }

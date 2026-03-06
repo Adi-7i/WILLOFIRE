@@ -1,5 +1,19 @@
-import { Controller, Post, Get, Param, UseInterceptors } from '@nestjs/common';
+import {
+    Controller,
+    Post,
+    Get,
+    Param,
+    UseInterceptors,
+    UploadedFile,
+    ParseFilePipe,
+    MaxFileSizeValidator,
+    FileTypeValidator,
+    // UseGuards, // TODO: Uncomment when JwtAuthGuard is ready
+} from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+
 import { PdfService } from './pdf.service';
+// import { CurrentUser } from '../auth/decorators/current-user.decorator'; // TODO: Uncomment when ready
 
 /**
  * PdfController — THIN controller
@@ -14,12 +28,29 @@ export class PdfController {
     /**
      * POST /api/v1/pdf/upload
      * Upload and enqueue a PDF for processing.
-     * TODO (Phase 2): @UseInterceptors(FileInterceptor('file'))
+     * Uses FileInterceptor for multipart/form-data.
+     * Validates file size (50MB max) and type (application/pdf).
      */
     @Post('upload')
-    async upload(): Promise<unknown> {
-        // TODO (Phase 2): Accept UploadedFile, pass to pdfService.uploadAndEnqueue()
-        return this.pdfService.upload();
+    // @UseGuards(JwtAuthGuard) // TODO
+    @UseInterceptors(FileInterceptor('file')) // Expects the multipart field name to be 'file'
+    async upload(
+        @UploadedFile(
+            new ParseFilePipe({
+                validators: [
+                    // 50 MB in bytes
+                    new MaxFileSizeValidator({ maxSize: 50 * 1024 * 1024 }),
+                    new FileTypeValidator({ fileType: 'application/pdf' }),
+                ],
+            }),
+        )
+        file: Express.Multer.File,
+        // @CurrentUser() user: any // TODO
+    ): Promise<{ pdfId: string; status: string }> {
+        // TEMPORARY placeholder userId until AuthModule features are linked
+        const placeholderUserId = '64f1b2c3d4e5f6a7b8c9d0e1';
+
+        return this.pdfService.uploadAndEnqueue(file, placeholderUserId);
     }
 
     /**
@@ -29,7 +60,9 @@ export class PdfController {
      */
     @Get()
     async findAll(): Promise<unknown> {
-        return this.pdfService.findAll();
+        // TEMPORARY placeholder userId until AuthModule features are linked
+        const placeholderUserId = '64f1b2c3d4e5f6a7b8c9d0e1';
+        return this.pdfService.findAll(placeholderUserId);
     }
 
     /**

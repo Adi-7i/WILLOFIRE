@@ -1,25 +1,47 @@
 import { Module } from '@nestjs/common';
+import { MongooseModule } from '@nestjs/mongoose';
+
 import { EvaluationController } from './evaluation.controller';
 import { EvaluationService } from './evaluation.service';
+import {
+    AnswerSubmission,
+    AnswerSubmissionSchema,
+} from './schemas/answer-submission.schema';
+import {
+    EvaluationResult,
+    EvaluationResultSchema,
+} from './schemas/evaluation-result.schema';
+import { AnswerSubmissionRepository } from './repositories/answer-submission.repository';
+import { EvaluationResultRepository } from './repositories/evaluation-result.repository';
+import { StorageModule } from '../../infrastructure/storage/storage.module';
+import { AiModule } from '../ai/ai.module';
 
 /**
- * EvaluationModule
+ * EvaluationModule — Phase 3 update.
  *
- * Owns answer evaluation and performance analytics:
- *  - Grade user answers against correct MCQ answers
- *  - AI-powered explanation generation per question
- *  - Performance tracking per topic/difficulty
- *  - Score reporting and leaderboard data
- *
- * Phase 1: Structure only.
+ * Registers AnswerSubmission + EvaluationResult schemas.
+ * Both repositories exported so Phase 5's AI evaluation pipeline
+ * can write results without coupling to EvaluationService internals.
  */
 @Module({
     imports: [
-        // TODO (Phase 2): MongooseModule for Attempt, Result schemas
-        // TODO (Phase 3): AiModule (for AI answer explanations)
+        MongooseModule.forFeature([
+            { name: AnswerSubmission.name, schema: AnswerSubmissionSchema },
+            { name: EvaluationResult.name, schema: EvaluationResultSchema },
+        ]),
+        StorageModule,
+        AiModule,
     ],
     controllers: [EvaluationController],
-    providers: [EvaluationService],
-    exports: [EvaluationService],
+    providers: [
+        EvaluationService,
+        AnswerSubmissionRepository,
+        EvaluationResultRepository,
+    ],
+    exports: [
+        EvaluationService,
+        AnswerSubmissionRepository,
+        EvaluationResultRepository,
+    ],
 })
 export class EvaluationModule { }
