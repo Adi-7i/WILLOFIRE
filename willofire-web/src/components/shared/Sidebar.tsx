@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, FileText, MessageSquare, Files, CheckCircle, Download, X } from 'lucide-react';
+import { LayoutDashboard, FileText, MessageSquare, Files, CheckCircle, Download, X, Globe } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
 interface SidebarProps {
@@ -12,6 +12,7 @@ interface SidebarProps {
 
 const NAV_ITEMS = [
     { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+    { name: 'Discover', href: '/dashboard/discover', icon: Globe },
     { name: 'My PDFs', href: '/dashboard/pdfs', icon: FileText },
     { name: 'Ask PDF', href: '/dashboard/ask-pdf', icon: MessageSquare },
     { name: 'Mock Tests', href: '/dashboard/mock-tests', icon: Files },
