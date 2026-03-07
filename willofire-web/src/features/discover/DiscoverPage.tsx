@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { RefreshCcw, BookOpen } from 'lucide-react';
 import { useDiscoverArticles } from '@/hooks/use-discover';
-import { BackendCategory } from '@/lib/api/discover';
+import { BackendCategory, DiscoverArticle } from '@/lib/api/discover';
 
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
@@ -36,11 +36,19 @@ export function DiscoverPage() {
     // Fetch live data (asks for 50 limit to ensure we have enough to fill featured + grid)
     const { data: articles, isLoading, isError, refetch } = useDiscoverArticles(backendCategory, 50);
 
-    const hasArticles = articles && articles.length > 0;
+    // FIX 10: Client-side robust safety filter
+    const isArticleTrustworthy = (article: DiscoverArticle) => {
+        if (!article.title || !article.summary || !article.examRelevance) return false;
+        const diffHours = (new Date().getTime() - new Date(article.publishedAt).getTime()) / (1000 * 60 * 60);
+        return diffHours <= 72; // Redundant check, but adds client safety layer
+    };
+
+    const trustedArticles = articles ? articles.filter(isArticleTrustworthy) : [];
+    const hasArticles = trustedArticles.length > 0;
 
     // Split into Featured (top 3) and Grid (the rest)
-    const featuredArticles = hasArticles ? articles.slice(0, 3) : [];
-    const gridArticles = hasArticles ? articles.slice(3) : [];
+    const featuredArticles = hasArticles ? trustedArticles.slice(0, 3) : [];
+    const gridArticles = hasArticles ? trustedArticles.slice(3) : [];
 
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">

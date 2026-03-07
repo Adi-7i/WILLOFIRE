@@ -8,6 +8,8 @@ import {
     DiscoverCategory,
     NormalizedArticle,
     SearxngResult,
+    FRESHNESS_THRESHOLD_HOURS,
+    TRUSTED_DOMAINS
 } from './discover.types';
 
 @Injectable()
@@ -69,6 +71,16 @@ export class DiscoverService {
                     const existing = await this.discoverRepository.findBySourceUrl(article.sourceUrl);
                     if (existing) continue;
 
+                    // FIX 6: Image validation (HEAD request)
+                    article.imageUrl = await this.validateImageUrl(article.imageUrl);
+
+                    // FIX 3 & 4 & 8: AI Trust Verification (Two-Pass + Category match)
+                    const isTrustworthy = await this.verifyArticleTrust(article);
+                    if (!isTrustworthy) {
+                        this.logger.debug(`Article rejected by AI Trust Layer: ${article.sourceUrl}`);
+                        continue;
+                    }
+
                     // Generate summaries + exam relevance using AiService
                     const [summary, examRelevance] = await Promise.all([
                         this.generateSummary(article),
@@ -121,29 +133,80 @@ export class DiscoverService {
     }
 
     private normalizeResults(raw: SearxngResult[], category: DiscoverCategory): NormalizedArticle[] {
-        return raw.map(item => {
-            const cleanedTitle = this.cleanTitle(item.title, item.content);
+        return raw
+            .filter(item => this.isArticleFresh(item.publishedDate))
+            .filter(item => this.isSourceTrusted(item.url))
+            .map(item => {
+                const cleanedTitle = this.cleanTitle(item.title, item.content);
 
-            // Priority image extraction + HTML fallback
-            let bestImage = item.img_src || item.thumbnail || item.image || item.og_image || null;
-            if (!bestImage && item.content) {
-                const imgMatch = item.content.match(/<img[^>]+src="([^">]+)"/);
-                if (imgMatch && imgMatch[1]) {
-                    bestImage = imgMatch[1];
+                // Priority image extraction + HTML fallback
+                let bestImage = item.img_src || item.thumbnail || item.image || item.og_image || null;
+                if (!bestImage && item.content) {
+                    const imgMatch = item.content.match(/<img[^>]+src="([^">]+)"/);
+                    if (imgMatch && imgMatch[1]) {
+                        bestImage = imgMatch[1];
+                    }
                 }
-            }
 
-            return {
-                title: cleanedTitle,
-                summary: item.content, // Temporary raw snippet; replaced later by AI
-                source: item.engine || new URL(item.url).hostname.replace('www.', ''),
-                sourceUrl: item.url,
-                imageUrl: bestImage,
-                category,
-                publishedAt: item.publishedDate ? new Date(item.publishedDate) : new Date(),
-                rankScore: 0,
-            };
-        });
+                return {
+                    title: cleanedTitle,
+                    summary: item.content, // Temporary raw snippet; replaced later by AI
+                    source: item.engine || new URL(item.url).hostname.replace('www.', ''),
+                    sourceUrl: item.url,
+                    imageUrl: bestImage,
+                    category,
+                    publishedAt: item.publishedDate ? new Date(item.publishedDate) : new Date(),
+                    rankScore: 0,
+                };
+            });
+    }
+
+    /**
+     * FIX 1: Reject old or dating-missing articles
+     */
+    private isArticleFresh(publishedDateString?: string): boolean {
+        if (!publishedDateString) return false;
+        const publishedDate = new Date(publishedDateString);
+        if (isNaN(publishedDate.getTime())) return false;
+
+        const now = new Date();
+        const diffHours = (now.getTime() - publishedDate.getTime()) / (1000 * 60 * 60);
+        return diffHours >= 0 && diffHours <= FRESHNESS_THRESHOLD_HOURS;
+    }
+
+    /**
+     * FIX 2: Allow only trusted domains
+     */
+    private isSourceTrusted(url: string): boolean {
+        try {
+            const hostname = new URL(url).hostname.replace(/^www\./, '').toLowerCase();
+            return TRUSTED_DOMAINS.some(domain => hostname === domain || hostname.endsWith(`.${domain}`));
+        } catch {
+            return false;
+        }
+    }
+
+    /**
+     * FIX 6: Validate image URLs natively via HTTP HEAD
+     */
+    private async validateImageUrl(url: string | null): Promise<string | null> {
+        if (!url) return null;
+        if (url.startsWith('data:')) return url;
+
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 2000);
+
+            const response = await fetch(url, { method: 'HEAD', signal: controller.signal });
+            clearTimeout(timeoutId);
+
+            if (response.ok && response.headers.get('content-type')?.startsWith('image/')) {
+                return url;
+            }
+            return null;
+        } catch (error) {
+            return null; // Network error or timeout -> assume broken
+        }
     }
 
     /**
@@ -235,9 +298,8 @@ export class DiscoverService {
             score -= 10;
         }
 
-        // Source credibility bonus
-        const trustedSources = ['thehindu', 'indianexpress', 'reuters', 'bbc', 'bloomberg', 'economictimes', 'livemint'];
-        if (trustedSources.some(ts => article.source.toLowerCase().includes(ts))) {
+        // Source credibility bonus (all are trusted at this point, but can scale later)
+        if (TRUSTED_DOMAINS.some(ts => article.source.toLowerCase().includes(ts))) {
             score += 15;
         }
 
@@ -263,8 +325,17 @@ export class DiscoverService {
 
     private async generateExamRelevance(article: NormalizedArticle): Promise<string> {
         try {
-            // FIX 5: Use cleaned title + snippet for precise topic modeling
-            const prompt = `Based on the following news, output one short sentence stating its relevance to competitive exams (like UPSC, SSC).\n\nTitle: ${article.title}\nSnippet: ${article.summary}\n\nRULES:\n- Format exactly like: "Relevant for [Topic]." \n- Example: "Relevant for international relations and diplomacy."\n- Max 1 sentence. Make it precise.`;
+            // FIX 7: Use cleaned title + snippet for high-precision topic modeling
+            const prompt = `Based on the following news, output one short sentence stating its relevance to competitive exams (like UPSC, SSC).
+
+Title: ${article.title}
+Snippet: ${article.summary}
+
+RULES:
+- Format exactly like: "Relevant for [Specific Topic/Subtopic]." 
+- Example: "Relevant for missile defense modernization and procurement policy."
+- BAD Example: "Relevant for science and technology." (Too generic)
+- Max 1 sentence. Make it extremely specific and professional.`;
 
             const result = await this.aiService.generateCompletion([
                 { role: 'system', content: 'You are an exam curriculum expert mapping current affairs to subjects.' },
@@ -274,6 +345,40 @@ export class DiscoverService {
             return result.content || 'Relevant for current affairs.';
         } catch (error) {
             return 'Relevant for current affairs.';
+        }
+    }
+
+    /**
+     * FIX 3 & 4 & 8: AI Trust Verification (Two-Pass Logic + Category Match)
+     */
+    private async verifyArticleTrust(article: NormalizedArticle): Promise<boolean> {
+        try {
+            const prompt = `You are a strict editorial AI for a premium UPSC/SSC exam prep platform.
+You must verify an article before it is shown to students.
+
+Title: ${article.title}
+Snippet: ${article.summary}
+Expected Category: ${article.category}
+
+Answer these questions silently:
+1. Is this article genuinely current news (not historical context)?
+2. Is the source likely a credible news outlet?
+3. Is this article factual and free of clickbait?
+4. Does this genuinely match the expected category '${article.category}'?
+5. (Self-Challenge) Would an IAS or SSC aspirant genuinely find this important for their exam preparation, or is it just generic noise?
+
+Based on your harsh editorial evaluation, decide if it should be published.
+Respond with ONLY "APPROVE" or "REJECT". No other text.`;
+
+            const result = await this.aiService.generateCompletion([
+                { role: 'system', content: 'You are a flawless editorial gateway.' },
+                { role: 'user', content: prompt }
+            ], 'gpt-4o-mini'); // Can be slightly lighter model to save costs, but 4o-mini is standard
+
+            return result.content?.trim().toUpperCase() === 'APPROVE';
+        } catch (error) {
+            // Fail-safe: if AI check fails entirely, reject to preserve trust
+            return false;
         }
     }
 }

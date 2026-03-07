@@ -46,3 +46,18 @@ export const CATEGORY_QUERIES: Partial<Record<DiscoverCategory, string>> = {
     [DiscoverCategory.ENVIRONMENT]: 'climate change biodiversity environment policy india',
     [DiscoverCategory.DEFENSE]: 'india military defense missile security strategy',
 };
+
+export const FRESHNESS_THRESHOLD_HOURS = 72;
+
+export const TRUSTED_DOMAINS = [
+    'reuters.com',
+    'apnews.com',
+    'bbc.com',
+    'thehindu.com',
+    'indianexpress.com',
+    'livemint.com',
+    'business-standard.com',
+    'pib.gov.in',
+    'prsindia.org',
+    'isro.gov.in',
+];
