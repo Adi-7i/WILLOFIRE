@@ -21,7 +21,7 @@ export class McqController {
         @Body() body: GenerateMcqDto,
         @CurrentUser() user: any,
     ) {
-        return this.mcqService.generate(body, user.id);
+        return this.mcqService.generate(body, user.userId);
     }
 
     /**
@@ -30,7 +30,7 @@ export class McqController {
      */
     @Get()
     async findAll(@CurrentUser() user: any) {
-        return this.mcqService.findAll(user.id);
+        return this.mcqService.findAll(user.userId);
     }
 
     /**
@@ -42,7 +42,7 @@ export class McqController {
         @Param('id') id: string,
         @CurrentUser() user: any,
     ) {
-        return this.mcqService.findOne(id, user.id);
+        return this.mcqService.findOne(id, user.userId);
     }
 
     /**
@@ -55,7 +55,7 @@ export class McqController {
         @Body() body: SubmitMcqDto,
         @CurrentUser() user: any,
     ) {
-        return this.mcqService.submit(testId, body, user.id);
+        return this.mcqService.submit(testId, body, user.userId);
     }
 
     /**
@@ -67,7 +67,7 @@ export class McqController {
         @Param('testId') testId: string,
         @CurrentUser() user: any,
     ) {
-        return this.mcqService.downloadTestPdf(testId, user.id);
+        return this.mcqService.downloadTestPdf(testId, user.userId);
     }
 
     /**
@@ -79,6 +79,6 @@ export class McqController {
         @Param('testId') testId: string,
         @CurrentUser() user: any,
     ) {
-        return this.mcqService.downloadAnswerKeyPdf(testId, user.id);
+        return this.mcqService.downloadAnswerKeyPdf(testId, user.userId);
     }
 }
