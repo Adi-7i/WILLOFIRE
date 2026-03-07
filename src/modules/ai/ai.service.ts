@@ -22,11 +22,16 @@ export interface AiCompletionResult {
  * This is the SINGLE point of contact for all AI operations in Willofire.
  * It encapsulates the `openai` SDK, which is compatible with both native
  * OpenAI and Azure OpenAI endpoints via configuration.
+ *
+ * Two distinct Azure OpenAI clients are used:
+ *  - llmClient   → chat completions  (LLM_* vars, deployment-scoped URL)
+ *  - embedClient → text embeddings   (OPENAI_* vars, separate Azure endpoint)
  */
 @Injectable()
 export class AiService {
     private readonly logger = new Logger(AiService.name);
-    private readonly openai: OpenAI;
+    private readonly llmClient: OpenAI;
+    private readonly embedClient: OpenAI;
     private readonly defaultModel: string;
     private readonly defaultEmbeddingModel: string;
 
@@ -36,17 +41,45 @@ export class AiService {
         private readonly pdfGeneratorService: PdfGeneratorService,
         @Inject(STORAGE_TOKEN) private readonly storageService: StorageService,
     ) {
-        const apiKey = this.configService.get<string>('ai.openaiApiKey');
+        // ── LLM client (Azure OpenAI — chat completions) ────────────────────
+        const llmApiKey = this.configService.get<string>('ai.llm.apiKey');
+        const llmBaseURL = this.configService.get<string>('ai.llm.baseURL');
+        const llmApiVer = this.configService.get<string>('ai.llm.apiVersion') ?? '2024-12-01-preview';
+        const llmDeployment = this.configService.get<string>('ai.llm.deployment') ?? 'gpt-4.1';
 
-        if (!apiKey) {
-            this.logger.warn('OPENAI_API_KEY is not set. AI features will fail.');
+        if (!llmApiKey) {
+            this.logger.warn('LLM_API_KEY is not set. Chat completion features will fail.');
         }
 
-        this.openai = new OpenAI({ apiKey });
-        this.defaultModel = this.configService.get<string>('ai.model') ?? 'gpt-4o-mini';
-        this.defaultEmbeddingModel = this.configService.get<string>('ai.embeddingModel') ?? 'text-embedding-3-small';
+        // Azure routes by deployment, so we hard-scope the base URL to the deployment path.
+        this.llmClient = new OpenAI({
+            apiKey: llmApiKey ?? '',
+            baseURL: `${llmBaseURL}/openai/deployments/${llmDeployment}`,
+            defaultQuery: { 'api-version': llmApiVer },
+            defaultHeaders: { 'api-key': llmApiKey ?? '' },
+        });
 
-        this.logger.log(`AiService initialized.Default model: ${this.defaultModel} `);
+        // The model name sent in the request body is ignored by Azure when routing via
+        // the deployment URL — use the deployment name as a human-readable label only.
+        this.defaultModel = llmDeployment;
+
+        // ── Embed client (separate Azure OpenAI endpoint — embeddings) ───────
+        const embedApiKey = this.configService.get<string>('ai.embed.apiKey');
+        const embedBaseURL = this.configService.get<string>('ai.embed.baseURL');
+
+        if (!embedApiKey) {
+            this.logger.warn('OPENAI_API_KEY (embed endpoint) is not set. Embedding features will fail.');
+        }
+
+        this.embedClient = new OpenAI({
+            apiKey: embedApiKey ?? '',
+            baseURL: embedBaseURL,
+            defaultHeaders: { 'api-key': embedApiKey ?? '' },
+        });
+
+        this.defaultEmbeddingModel = this.configService.get<string>('ai.embed.model') ?? 'text-embedding-3-small';
+
+        this.logger.log(`AiService initialized. LLM deployment: ${this.defaultModel}, Embed model: ${this.defaultEmbeddingModel}`);
     }
 
     /**
@@ -64,7 +97,7 @@ export class AiService {
             this.logger.debug(`Prompt Content: ${messages[messages.length - 1].content} `);
 
             const AI_TIMEOUT_MS = 30_000;
-            const apiCall = this.openai.chat.completions.create({
+            const apiCall = this.llmClient.chat.completions.create({
                 model,
                 messages,
                 temperature: 0.2, // Low temperature for factual output
@@ -99,7 +132,7 @@ export class AiService {
      */
     async generateEmbedding(text: string): Promise<number[]> {
         try {
-            const response = await this.openai.embeddings.create({
+            const response = await this.embedClient.embeddings.create({
                 model: this.defaultEmbeddingModel,
                 input: text,
             });
