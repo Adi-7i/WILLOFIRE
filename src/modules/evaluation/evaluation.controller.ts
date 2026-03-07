@@ -48,7 +48,7 @@ export class EvaluationController {
             throw new BadRequestException('Must provide either a file or a valid question reference');
         }
 
-        return this.evaluationService.submit(body, file, user.id);
+        return this.evaluationService.submit(body, file, user.userId);
     }
 
     /**

@@ -2,8 +2,7 @@ import { Injectable, Inject, Logger, OnModuleInit, OnApplicationShutdown } from 
 import { Worker, Job } from 'bullmq';
 import Redis from 'ioredis';
 import * as https from 'https';
-import * as pdfParseMod from 'pdf-parse';
-const pdfParse = (pdfParseMod as any).default || pdfParseMod;
+import { PDFParse, VerbosityLevel } from 'pdf-parse';
 
 import { REDIS_CLIENT } from '../../redis/redis.constants';
 import { PDF_PROCESSING_QUEUE } from '../queue.constants';
@@ -89,11 +88,13 @@ export class PdfProcessingWorker implements OnModuleInit, OnApplicationShutdown 
             const pdfBuffer = await this.downloadBuffer(signedUrl);
 
             // 5. Parse PDF text
-            this.logger.debug(`[PdfWorker] Parsing text from ${pdfBuffer.length} bytes`);
-            const parsedData = await pdfParse(pdfBuffer);
+            const parser = new PDFParse({ data: pdfBuffer, verbosity: VerbosityLevel.ERRORS });
+            const textResult = await parser.getText();
+            const infoResult = await parser.getInfo();
+            await parser.destroy();
 
-            const fullText = parsedData.text;
-            const parsedPageCount = parsedData.numpages;
+            const fullText = textResult.text;
+            const parsedPageCount = infoResult.total ?? 0;
 
             // 6. Chunking (deterministic, naive char-based)
             const chunksData = this.chunkText(fullText, CHUNK_SIZE, pdfId);
