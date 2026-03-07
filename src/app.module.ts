@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { APP_GUARD } from '@nestjs/core';
 
 import { DatabaseModule } from './infrastructure/database/database.module';
@@ -14,6 +15,7 @@ import { McqModule } from './modules/mcq/mcq.module';
 import { EvaluationModule } from './modules/evaluation/evaluation.module';
 import { AiModule } from './modules/ai/ai.module';
 import { HealthModule } from './modules/health/health.module';
+import { DiscoverModule } from './modules/discover/discover.module';
 
 // Global guard
 import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
@@ -26,6 +28,7 @@ import {
   jwtConfig,
   aiConfig,
   storageConfig,
+  discoverConfig,
 } from './config/env.config';
 
 /**
@@ -43,10 +46,11 @@ import {
       isGlobal: true,
       envFilePath: ['.env'],
       expandVariables: true,
-      load: [appConfig, dbConfig, redisConfig, jwtConfig, aiConfig, storageConfig],
+      load: [appConfig, dbConfig, redisConfig, jwtConfig, aiConfig, storageConfig, discoverConfig],
     }),
 
     // ── Infrastructure ─────────────────────────────────────────────────────
+    ScheduleModule.forRoot(),
     DatabaseModule,
     RedisModule,
     StorageModule,
@@ -59,6 +63,7 @@ import {
     EvaluationModule,
     AiModule,
     HealthModule,
+    DiscoverModule,
   ],
   providers: [
     // ── Global JWT guard ───────────────────────────────────────────────────

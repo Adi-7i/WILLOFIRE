@@ -52,17 +52,17 @@ export const jwtConfig = registerAs('jwt', () => ({
 export const aiConfig = registerAs('ai', () => ({
     // ── LLM (Azure OpenAI — chat completions) ─────────────────────────────
     llm: {
-        provider:   process.env.LLM_PROVIDER ?? 'azure',
-        apiKey:     process.env.LLM_API_KEY,
-        baseURL:    process.env.LLM_AZURE_BASE_URL,
+        provider: process.env.LLM_PROVIDER ?? 'azure',
+        apiKey: process.env.LLM_API_KEY,
+        baseURL: process.env.LLM_AZURE_BASE_URL,
         apiVersion: process.env.LLM_AZURE_API_VERSION ?? '2024-12-01-preview',
         deployment: process.env.LLM_AZURE_DEPLOYMENT ?? 'gpt-4.1',
     },
     // ── Embedding (separate Azure OpenAI endpoint) ─────────────────────────
     embed: {
-        apiKey:    process.env.OPENAI_API_KEY,
-        baseURL:   process.env.OPENAI_BASE_URL,
-        model:     process.env.OPENAI_EMBED_MODEL ?? 'text-embedding-3-small',
+        apiKey: process.env.OPENAI_API_KEY,
+        baseURL: process.env.OPENAI_BASE_URL,
+        model: process.env.OPENAI_EMBED_MODEL ?? 'text-embedding-3-small',
         maxChunks: parseInt(process.env.AI_MAX_CHUNKS ?? '5', 10),
     },
 }));
@@ -75,4 +75,10 @@ export const storageConfig = registerAs('storage', () => ({
         container: process.env.AZURE_BLOB_CONTAINER_NAME ?? '',
         sasExpiryHours: parseInt(process.env.BLOB_SAS_EXPIRY_HOURS ?? '24', 10),
     },
+}));
+
+// ── Discover Engine config ──────────────────────────────────────────────────
+export const discoverConfig = registerAs('discover', () => ({
+    searxngBaseUrl: process.env.SEARXNG_BASE_URL ?? 'http://localhost:8080',
+    fetchIntervalMs: 60 * 60 * 1000, // 1 hour by default
 }));
