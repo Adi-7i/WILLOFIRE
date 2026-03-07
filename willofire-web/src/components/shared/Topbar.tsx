@@ -11,8 +11,8 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useRouter, usePathname } from 'next/navigation';
-import { removeToken } from '@/lib/utils/token';
+import { usePathname } from 'next/navigation';
+import { useLogout } from '@/features/auth/useAuth';
 
 interface TopbarProps {
     onOpenSidebar: () => void;
@@ -29,13 +29,8 @@ const getPageTitle = (pathname: string) => {
 };
 
 export function Topbar({ onOpenSidebar }: TopbarProps) {
-    const router = useRouter();
     const pathname = usePathname();
-
-    const handleLogout = () => {
-        removeToken();
-        router.push('/login');
-    };
+    const logout = useLogout();
 
     return (
         <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-x-4 border-b border-zinc-200 bg-white px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
@@ -49,7 +44,6 @@ export function Topbar({ onOpenSidebar }: TopbarProps) {
                 <Menu className="h-6 w-6" aria-hidden="true" />
             </Button>
 
-            {/* Separator for mobile */}
             <div className="h-6 w-px bg-zinc-200 md:hidden" aria-hidden="true" />
 
             <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
@@ -63,16 +57,16 @@ export function Topbar({ onOpenSidebar }: TopbarProps) {
                         <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                                 <Avatar className="h-8 w-8">
-                                    <AvatarFallback className="bg-blue-100 text-blue-700 font-medium">JD</AvatarFallback>
+                                    <AvatarFallback className="bg-blue-100 text-blue-700 font-medium">WF</AvatarFallback>
                                 </Avatar>
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent className="w-56" align="end" forceMount>
                             <DropdownMenuLabel className="font-normal">
                                 <div className="flex flex-col space-y-1">
-                                    <p className="text-sm font-medium leading-none">John Doe</p>
+                                    <p className="text-sm font-medium leading-none">Willofire User</p>
                                     <p className="text-xs leading-none text-muted-foreground">
-                                        john@example.com
+                                        Logged in
                                     </p>
                                 </div>
                             </DropdownMenuLabel>
@@ -81,9 +75,12 @@ export function Topbar({ onOpenSidebar }: TopbarProps) {
                                 <User className="mr-2 h-4 w-4" />
                                 <span>Profile</span>
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:bg-red-50 focus:text-red-600">
+                            <DropdownMenuItem
+                                onClick={() => logout.mutate()}
+                                className="text-red-600 focus:bg-red-50 focus:text-red-600"
+                            >
                                 <LogOut className="mr-2 h-4 w-4" />
-                                <span>Log out</span>
+                                <span>{logout.isPending ? 'Logging out...' : 'Log out'}</span>
                             </DropdownMenuItem>
                         </DropdownMenuContent>
                     </DropdownMenu>

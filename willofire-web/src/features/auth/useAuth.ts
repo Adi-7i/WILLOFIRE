@@ -1,7 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { authApi } from '@/lib/api/auth';
-import { setToken } from '@/lib/utils/token';
+import { clearTokens, setTokens } from '@/lib/utils/token';
 import { LoginPayload, RegisterPayload } from '@/types/auth';
 
 export const useLogin = () => {
@@ -10,7 +10,7 @@ export const useLogin = () => {
     return useMutation({
         mutationFn: (data: LoginPayload) => authApi.login(data),
         onSuccess: (data) => {
-            setToken(data.accessToken);
+            setTokens(data.accessToken, data.refreshToken);
             router.push('/dashboard');
         },
     });
@@ -22,8 +22,20 @@ export const useRegister = () => {
     return useMutation({
         mutationFn: (data: RegisterPayload) => authApi.register(data),
         onSuccess: (data) => {
-            setToken(data.accessToken);
+            setTokens(data.accessToken, data.refreshToken);
             router.push('/dashboard');
+        },
+    });
+};
+
+export const useLogout = () => {
+    const router = useRouter();
+
+    return useMutation({
+        mutationFn: authApi.logout,
+        onSettled: () => {
+            clearTokens();
+            router.push('/login');
         },
     });
 };

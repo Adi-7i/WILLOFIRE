@@ -1,18 +1,21 @@
 import { Sparkles, FileQuestion, BookOpen } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 
+interface HistoryItem {
+    id: string;
+    question: string;
+    time: string;
+}
+
 interface AnswerPanelProps {
     answer: string | null;
     isLoading: boolean;
     hasAnswered: boolean;
+    sources: number[];
+    history: HistoryItem[];
 }
 
-const dummyHistory = [
-    { id: '1', question: 'What is the ideal gas law?', time: '2 mins ago' },
-    { id: '2', question: 'Explain enthalpy in simple terms.', time: '1 hour ago' },
-];
-
-export function AnswerPanel({ answer, isLoading, hasAnswered }: AnswerPanelProps) {
+export function AnswerPanel({ answer, isLoading, hasAnswered, sources, history }: AnswerPanelProps) {
     return (
         <div className="flex flex-col h-full space-y-6">
             <div className="flex-1 rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden flex flex-col">
@@ -43,20 +46,27 @@ export function AnswerPanel({ answer, isLoading, hasAnswered }: AnswerPanelProps
                             ) : (
                                 <div className="space-y-8 animate-in fade-in duration-500">
                                     <div className="prose prose-slate max-w-none">
-                                        <p className="text-slate-700 leading-relaxed text-lg">
-                                            {answer}
-                                        </p>
+                                        <p className="text-slate-700 leading-relaxed text-lg">{answer}</p>
                                     </div>
 
-                                    <div className="pt-6 border-t border-slate-100">
-                                        <h4 className="text-sm font-semibold text-slate-900 flex items-center gap-2 mb-3">
-                                            <BookOpen className="h-4 w-4 text-slate-400" /> References
-                                        </h4>
-                                        <div className="flex flex-wrap gap-2">
-                                            <Badge variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-100 font-medium">Page 4</Badge>
-                                            <Badge variant="secondary" className="bg-blue-50 text-blue-700 hover:bg-blue-100 font-medium">Page 12</Badge>
+                                    {sources.length > 0 ? (
+                                        <div className="pt-6 border-t border-slate-100">
+                                            <h4 className="text-sm font-semibold text-slate-900 flex items-center gap-2 mb-3">
+                                                <BookOpen className="h-4 w-4 text-slate-400" /> References
+                                            </h4>
+                                            <div className="flex flex-wrap gap-2">
+                                                {sources.map((page) => (
+                                                    <Badge
+                                                        key={page}
+                                                        variant="secondary"
+                                                        className="bg-blue-50 text-blue-700 hover:bg-blue-100 font-medium"
+                                                    >
+                                                        Page {page}
+                                                    </Badge>
+                                                ))}
+                                            </div>
                                         </div>
-                                    </div>
+                                    ) : null}
                                 </div>
                             )}
                         </div>
@@ -64,17 +74,23 @@ export function AnswerPanel({ answer, isLoading, hasAnswered }: AnswerPanelProps
                 )}
             </div>
 
-            {/* History Section */}
             {(hasAnswered || isLoading) && (
                 <div className="rounded-xl border border-slate-200 bg-white shadow-sm p-6">
                     <h4 className="text-sm font-semibold text-slate-900 mb-4">Recent Questions</h4>
                     <div className="space-y-3">
-                        {dummyHistory.map((item) => (
-                            <div key={item.id} className="flex justify-between items-start gap-4 p-3 rounded-lg hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-colors cursor-pointer text-left">
-                                <p className="text-sm font-medium text-slate-700 line-clamp-1">{item.question}</p>
-                                <span className="text-xs text-slate-400 whitespace-nowrap shrink-0">{item.time}</span>
-                            </div>
-                        ))}
+                        {history.length === 0 ? (
+                            <p className="text-sm text-slate-500">No recent questions yet.</p>
+                        ) : (
+                            history.map((item) => (
+                                <div
+                                    key={item.id}
+                                    className="flex justify-between items-start gap-4 p-3 rounded-lg hover:bg-slate-50 border border-transparent hover:border-slate-100 transition-colors cursor-pointer text-left"
+                                >
+                                    <p className="text-sm font-medium text-slate-700 line-clamp-1">{item.question}</p>
+                                    <span className="text-xs text-slate-400 whitespace-nowrap shrink-0">{item.time}</span>
+                                </div>
+                            ))
+                        )}
                     </div>
                 </div>
             )}

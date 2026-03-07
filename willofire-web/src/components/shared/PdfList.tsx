@@ -17,7 +17,7 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
-import { PdfFile, DUMMY_PDFS } from '@/types/pdf';
+import { PdfListItem } from '@/lib/api/types';
 
 const statusConfig = {
     uploaded: { label: 'Uploaded', className: 'bg-blue-50 text-blue-700 hover:bg-blue-100' },
@@ -26,7 +26,25 @@ const statusConfig = {
     failed: { label: 'Failed', className: 'bg-red-50 text-red-700 hover:bg-red-100' },
 };
 
-export function PdfList() {
+interface PdfListProps {
+    pdfs: PdfListItem[];
+    isLoading: boolean;
+    isError: boolean;
+}
+
+const formatFileSize = (bytes: number) => {
+    if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+};
+
+const formatDate = (value: string) =>
+    new Intl.DateTimeFormat('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+    }).format(new Date(value));
+
+export function PdfList({ pdfs, isLoading, isError }: PdfListProps) {
     return (
         <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
             <div className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4">
@@ -45,25 +63,37 @@ export function PdfList() {
                         </TableRow>
                     </TableHeader>
                     <TableBody>
-                        {DUMMY_PDFS.length === 0 ? (
+                        {isLoading ? (
+                            <TableRow>
+                                <TableCell colSpan={5} className="h-24 text-center text-slate-500">
+                                    Loading PDFs...
+                                </TableCell>
+                            </TableRow>
+                        ) : isError ? (
+                            <TableRow>
+                                <TableCell colSpan={5} className="h-24 text-center text-red-500">
+                                    Failed to load PDFs.
+                                </TableCell>
+                            </TableRow>
+                        ) : pdfs.length === 0 ? (
                             <TableRow>
                                 <TableCell colSpan={5} className="h-24 text-center text-slate-500">
                                     No PDFs uploaded yet.
                                 </TableCell>
                             </TableRow>
                         ) : (
-                            DUMMY_PDFS.map((pdf) => (
+                            pdfs.map((pdf) => (
                                 <TableRow key={pdf.id}>
                                     <TableCell className="font-medium text-slate-900">
                                         <div className="flex items-center gap-3">
                                             <div className="rounded p-2 bg-blue-50 text-blue-600">
                                                 <FileText className="h-4 w-4" />
                                             </div>
-                                            <span className="truncate max-w-[250px] sm:max-w-xs">{pdf.name}</span>
+                                            <span className="truncate max-w-[250px] sm:max-w-xs">{pdf.originalName}</span>
                                         </div>
                                     </TableCell>
-                                    <TableCell className="text-slate-500">{pdf.size}</TableCell>
-                                    <TableCell className="text-slate-500">{pdf.uploadedAt}</TableCell>
+                                    <TableCell className="text-slate-500">{formatFileSize(pdf.fileSizeBytes)}</TableCell>
+                                    <TableCell className="text-slate-500">{formatDate(pdf.createdAt)}</TableCell>
                                     <TableCell>
                                         <Badge variant="secondary" className={`${statusConfig[pdf.status].className} font-medium border-0`}>
                                             {statusConfig[pdf.status].label}
@@ -82,7 +112,9 @@ export function PdfList() {
                                                 <DropdownMenuItem disabled={pdf.status !== 'ready'}>Generate Mock Test</DropdownMenuItem>
                                                 <DropdownMenuItem disabled={pdf.status !== 'ready'}>Ask PDF</DropdownMenuItem>
                                                 <DropdownMenuSeparator />
-                                                <DropdownMenuItem className="text-red-600">Delete PDF</DropdownMenuItem>
+                                                <DropdownMenuItem className="text-red-600" disabled>
+                                                    Delete PDF
+                                                </DropdownMenuItem>
                                             </DropdownMenuContent>
                                         </DropdownMenu>
                                     </TableCell>
