@@ -1,23 +1,20 @@
 'use client';
 
 import { useState } from 'react';
-import { RefreshCcw, BookOpen } from 'lucide-react';
+import { BookOpen, RefreshCcw, Sparkles } from 'lucide-react';
 import { useDiscoverArticles } from '@/hooks/use-discover';
-import { BackendCategory, DiscoverArticle } from '@/lib/api/discover';
-
+import { BackendCategory } from '@/lib/api/discover';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 import { FeaturedCard } from './FeaturedCard';
 import { ArticleCard } from './ArticleCard';
+import { HorizontalArticleCard } from './HorizontalArticleCard';
 import { ArticleSkeleton } from './ArticleSkeleton';
-import { Card } from '@/components/ui/card';
+import { getFreshnessLabel, isArticleRenderable, isTrendingArticle } from './discover.utils';
 
-/**
- * Category Mapping: Frontend Tab -> Backend Category
- * Null means "All / Headlines"
- */
-const TABS: { id: string; label: string; backendCategory: BackendCategory | null }[] = [
-    { id: 'headlines', label: "Today's Headlines", backendCategory: null }, // Shows highest ranked across all
+const TABS: { id: string; label: string; backendCategory: BackendCategory }[] = [
+    { id: 'headlines', label: "Today's Headlines", backendCategory: 'todays-headlines' },
     { id: 'economy', label: 'Economy', backendCategory: 'economy' },
     { id: 'polity', label: 'Polity', backendCategory: 'polity' },
     { id: 'international', label: 'International Relations', backendCategory: 'international-relations' },
@@ -29,49 +26,59 @@ const TABS: { id: string; label: string; backendCategory: BackendCategory | null
 export function DiscoverPage() {
     const [activeTab, setActiveTab] = useState<string>('headlines');
 
-    // Find the mapped backend category for the current tab
     const currentTabConfig = TABS.find((t) => t.id === activeTab);
-    const backendCategory = currentTabConfig?.backendCategory ?? undefined;
+    const backendCategory = currentTabConfig?.backendCategory;
 
-    // Fetch live data (asks for 50 limit to ensure we have enough to fill featured + grid)
     const { data: articles, isLoading, isError, refetch } = useDiscoverArticles(backendCategory, 50);
 
-    // FIX 10: Client-side robust safety filter
-    const isArticleTrustworthy = (article: DiscoverArticle) => {
-        if (!article.title || !article.summary || !article.examRelevance) return false;
-        const diffHours = (new Date().getTime() - new Date(article.publishedAt).getTime()) / (1000 * 60 * 60);
-        return diffHours <= 72; // Redundant check, but adds client safety layer
-    };
+    const trustedArticles = (articles ?? [])
+        .filter(isArticleRenderable)
+        .sort((a, b) => {
+            if (b.rankScore !== a.rankScore) {
+                return b.rankScore - a.rankScore;
+            }
+            return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
+        });
 
-    const trustedArticles = articles ? articles.filter(isArticleTrustworthy) : [];
     const hasArticles = trustedArticles.length > 0;
-
-    // Split into Featured (top 3) and Grid (the rest)
-    const featuredArticles = hasArticles ? trustedArticles.slice(0, 3) : [];
-    const gridArticles = hasArticles ? trustedArticles.slice(3) : [];
+    const featuredArticle = trustedArticles[0];
+    const compactArticles = trustedArticles.slice(1, 4);
+    const horizontalArticles = trustedArticles.slice(4);
+    const topStoryFreshness = featuredArticle ? getFreshnessLabel(featuredArticle.publishedAt) : 'Awaiting refresh';
 
     return (
-        <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500 pb-12">
-            {/* Header Section */}
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight text-slate-900 flex items-center gap-3">
-                    <BookOpen className="h-8 w-8 text-blue-600" />
-                    Current Affairs Intelligence
-                </h1>
-                <p className="text-slate-500 mt-2 text-lg">
-                    Curated important developments with exam relevance for aspirants
-                </p>
-            </div>
+        <div className="space-y-8 pb-14">
+            <section className="rounded-3xl border border-slate-200/80 bg-gradient-to-b from-white to-[#fbfbf8] px-5 py-6 shadow-[0_10px_30px_rgba(15,23,42,0.04)] md:px-7">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                        <h1 className="flex items-center gap-3 text-3xl font-bold tracking-tight text-slate-950 md:text-4xl">
+                            <BookOpen className="h-8 w-8 text-blue-600" />
+                            Discovery
+                        </h1>
+                        <p className="mt-2 text-base text-slate-600 md:text-lg">
+                            Premium personalized current affairs feed powered by trusted sources.
+                        </p>
+                    </div>
+                    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3">
+                        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">Top Story</p>
+                        <p className="mt-1 text-sm font-semibold text-slate-900">{topStoryFreshness}</p>
+                    </div>
+                </div>
 
-            {/* Category Tabs */}
+                <div className="mt-5 flex items-center gap-2 text-sm font-medium text-slate-600">
+                    <Sparkles className="h-4 w-4 text-blue-600" />
+                    Personalized recommendation feed
+                </div>
+            </section>
+
             <div className="w-full overflow-x-auto pb-2 scrollbar-none">
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                    <TabsList className="h-11 bg-slate-100/50 p-1 rounded-lg justify-start w-max">
+                    <TabsList className="h-11 rounded-xl bg-white/80 p-1 shadow-[0_4px_16px_rgba(15,23,42,0.05)]">
                         {TABS.map((tab) => (
                             <TabsTrigger
                                 key={tab.id}
                                 value={tab.id}
-                                className="rounded-md px-4 py-2 font-medium text-sm data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-sm transition-all"
+                                className="rounded-lg px-4 py-2 text-sm font-medium data-[state=active]:bg-slate-900 data-[state=active]:text-white"
                             >
                                 {tab.label}
                             </TabsTrigger>
@@ -80,99 +87,81 @@ export function DiscoverPage() {
                 </Tabs>
             </div>
 
-            {/* Error State */}
             {isError && !isLoading && (
-                <Card className="flex flex-col items-center justify-center p-12 text-center border-dashed bg-slate-50">
-                    <div className="w-16 h-16 bg-red-50 text-red-500 rounded-full flex items-center justify-center mb-4">
+                <Card className="items-center border-dashed border-slate-300 bg-white p-12 text-center">
+                    <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-50 text-red-500">
                         <RefreshCcw className="h-8 w-8" />
                     </div>
-                    <h3 className="text-xl font-bold text-slate-900 mb-2">Failed to load feed</h3>
-                    <p className="text-slate-500 mb-6 max-w-sm">
-                        We encountered an error while safely fetching your secure news feed.
+                    <h3 className="mb-2 text-xl font-bold text-slate-900">Unable to refresh Discover feed</h3>
+                    <p className="mb-6 max-w-md text-slate-500">
+                        We could not fetch trusted-source recommendations right now.
                     </p>
-                    <Button onClick={() => refetch()} variant="outline" className="gap-2">
+                    <Button onClick={() => refetch()} variant="outline" className="gap-2 rounded-full">
                         <RefreshCcw className="h-4 w-4" />
-                        Retry Now
+                        Retry
                     </Button>
                 </Card>
             )}
 
-            {/* Loading State */}
             {isLoading && (
-                <div className="space-y-8">
-                    {/* Featured Loading */}
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 h-[400px]">
-                        <div className="lg:col-span-2">
-                            <ArticleSkeleton />
-                        </div>
-                    </div>
-                    {/* Grid Loading */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                <div className="space-y-6">
+                    <ArticleSkeleton />
+                    <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
                         <ArticleSkeleton />
                         <ArticleSkeleton />
                         <ArticleSkeleton />
                     </div>
+                    <ArticleSkeleton />
+                    <ArticleSkeleton />
                 </div>
             )}
 
-            {/* Empty State */}
             {!isLoading && !isError && !hasArticles && (
-                <Card className="flex flex-col items-center justify-center p-16 text-center border-dashed bg-slate-50">
-                    <div className="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mb-4">
+                <Card className="items-center border-dashed border-slate-300 bg-white p-14 text-center">
+                    <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-slate-400">
                         <BookOpen className="h-8 w-8" />
                     </div>
-                    <h3 className="text-xl font-bold text-slate-900 mb-2">No current updates available</h3>
-                    <p className="text-slate-500 max-w-sm">
-                        Check back later. Our engine gathers high-quality sources every hour.
+                    <h3 className="mb-2 text-xl font-bold text-slate-900">No stories available yet</h3>
+                    <p className="max-w-md text-slate-500">
+                        New trusted articles will appear here after the next discovery refresh cycle.
                     </p>
                 </Card>
             )}
 
-            {/* Success State: Content */}
             {!isLoading && !isError && hasArticles && (
-                <div className="space-y-10">
-                    {/* Featured Top Section */}
-                    {featuredArticles.length > 0 && (
-                        <div className="space-y-4">
-                            <h2 className="text-lg font-bold tracking-tight text-slate-900 px-1 flex items-center gap-2">
-                                <span className="w-2 h-6 bg-blue-600 rounded-sm inline-block" />
-                                Top Stories
-                            </h2>
-                            <div className="grid gap-6 grid-cols-1 lg:grid-cols-12">
-                                {/* Primary Featured (takes half width or full on mobile) */}
-                                {featuredArticles[0] && (
-                                    <div className="lg:col-span-12 xl:col-span-8">
-                                        <FeaturedCard article={featuredArticles[0]} />
-                                    </div>
-                                )}
-
-                                {/* Secondary Featured (stacked vertically on right) */}
-                                {featuredArticles.slice(1).length > 0 && (
-                                    <div className="lg:col-span-12 xl:col-span-4 flex flex-col gap-6">
-                                        {featuredArticles.slice(1).map((article) => (
-                                            <div key={article._id} className="flex-1">
-                                                <ArticleCard article={article} />
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
-                            </div>
-                        </div>
+                <div className="space-y-7">
+                    {featuredArticle && (
+                        <section className="animate-in fade-in slide-in-from-bottom-3 duration-500">
+                            <FeaturedCard article={featuredArticle} isTrending={isTrendingArticle(featuredArticle, 0)} />
+                        </section>
                     )}
 
-                    {/* Standard Grid Section */}
-                    {gridArticles.length > 0 && (
-                        <div className="space-y-4">
-                            <h2 className="text-lg font-bold tracking-tight text-slate-900 px-1 flex items-center gap-2">
-                                <span className="w-2 h-6 bg-amber-500 rounded-sm inline-block" />
-                                More Insights
-                            </h2>
-                            <div className="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-3">
-                                {gridArticles.map((article) => (
-                                    <ArticleCard key={article._id} article={article} />
-                                ))}
-                            </div>
-                        </div>
+                    {compactArticles.length > 0 && (
+                        <section className="grid grid-cols-1 gap-5 md:grid-cols-3">
+                            {compactArticles.map((article, index) => (
+                                <div
+                                    key={article._id}
+                                    className="animate-in fade-in slide-in-from-bottom-3 duration-500"
+                                    style={{ animationDelay: `${80 * (index + 1)}ms` }}
+                                >
+                                    <ArticleCard article={article} isTrending={isTrendingArticle(article, index + 1)} />
+                                </div>
+                            ))}
+                        </section>
+                    )}
+
+                    {horizontalArticles.length > 0 && (
+                        <section className="space-y-5">
+                            {horizontalArticles.map((article, index) => (
+                                <div
+                                    key={article._id}
+                                    className="animate-in fade-in slide-in-from-bottom-4 duration-500"
+                                    style={{ animationDelay: `${80 * (index + 2)}ms` }}
+                                >
+                                    <HorizontalArticleCard article={article} index={index} />
+                                </div>
+                            ))}
+                        </section>
                     )}
                 </div>
             )}

@@ -2,7 +2,7 @@ import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card'
 
 export function ArticleSkeleton() {
     return (
-        <Card className="flex flex-col h-[480px] overflow-hidden border-slate-200">
+        <Card className="flex h-[460px] flex-col overflow-hidden rounded-3xl border-slate-200/80 bg-white shadow-[0_8px_28px_rgba(15,23,42,0.05)]">
             {/* Image Skeleton */}
             <div className="w-full h-48 bg-slate-100 animate-pulse shrink-0" />
 

@@ -1,5 +1,5 @@
-import { DiscoverPage } from '@/features/discover/DiscoverPage';
 import { Metadata } from 'next';
+import { DiscoverPageClient } from './DiscoverPageClient';
 
 export const metadata: Metadata = {
     title: 'Discover | Current Affairs Intelligence | Willofire',
@@ -7,5 +7,5 @@ export const metadata: Metadata = {
 };
 
 export default function Page() {
-    return <DiscoverPage />;
+    return <DiscoverPageClient />;
 }

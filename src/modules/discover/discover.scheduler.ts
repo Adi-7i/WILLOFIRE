@@ -7,18 +7,21 @@ import { DiscoverService } from './discover.service';
 @Injectable()
 export class DiscoverScheduler implements OnModuleInit {
     private readonly logger = new Logger(DiscoverScheduler.name);
+    private readonly isProduction: boolean;
 
     constructor(
         private readonly discoverService: DiscoverService,
         private readonly configService: ConfigService,
-    ) { }
+    ) {
+        this.isProduction = this.configService.get<boolean>('app.isProduction') ?? process.env.NODE_ENV === 'production';
+    }
 
     /**
      * Run an initial fetch when the module starts up, rather than
      * forcing the user to wait a full hour for the first feed.
      */
     async onModuleInit() {
-        this.logger.log('Executing initial Discover feed fetch on bootstrap...');
+        this.logVerbose('Executing initial Discover feed fetch on bootstrap...');
         // Execute asynchronously so it doesn't block app startup
         this.runFetchSafely();
     }
@@ -29,7 +32,7 @@ export class DiscoverScheduler implements OnModuleInit {
      */
     @Cron('0 * * * *')
     async handleCron() {
-        this.logger.log('Executing scheduled Discover feed fetch...');
+        this.logVerbose('Executing scheduled Discover feed fetch...');
         await this.runFetchSafely();
     }
 
@@ -39,6 +42,12 @@ export class DiscoverScheduler implements OnModuleInit {
         } catch (error) {
             // Unhandled errors here must be caught so the scheduler thread doesn't crash
             this.logger.error(`Critical error in Discover scheduler: ${(error as Error).message}`, (error as Error).stack);
+        }
+    }
+
+    private logVerbose(message: string): void {
+        if (!this.isProduction) {
+            this.logger.log(message);
         }
     }
 }

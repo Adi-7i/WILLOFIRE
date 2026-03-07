@@ -4,18 +4,27 @@ import { ConfigService } from '@nestjs/config';
 import { AiService } from '../ai/ai.service';
 import { DiscoverRepository } from './discover.repository';
 import {
-    CATEGORY_QUERIES,
+    CATEGORY_SOURCE_POOLS,
+    CATEGORY_TARGET_QUERIES,
     DiscoverCategory,
+    FRESHNESS_THRESHOLD_HOURS,
+    MAX_AI_VALIDATION_CANDIDATES,
+    MAX_STORED_ARTICLES_PER_CATEGORY,
+    NON_NEWS_PATTERNS,
     NormalizedArticle,
     SearxngResult,
-    FRESHNESS_THRESHOLD_HOURS,
-    TRUSTED_DOMAINS
+    SEARXNG_ENGINE,
+    SEARXNG_PAGE_BATCH_COUNT,
+    TRUSTED_DOMAINS,
 } from './discover.types';
 
 @Injectable()
 export class DiscoverService {
     private readonly logger = new Logger(DiscoverService.name);
     private readonly searxngBaseUrl: string;
+    private readonly isProduction: boolean;
+    private readonly fetchConcurrency = 6;
+    private readonly searxngRequestTimeoutMs = 8_000;
 
     constructor(
         private readonly configService: ConfigService,
@@ -23,13 +32,23 @@ export class DiscoverService {
         private readonly discoverRepository: DiscoverRepository,
     ) {
         this.searxngBaseUrl = this.configService.get<string>('discover.searxngBaseUrl') ?? 'http://localhost:8080';
+        this.isProduction = this.configService.get<boolean>('app.isProduction') ?? process.env.NODE_ENV === 'production';
     }
 
     /**
      * Public method used by the Controller to fetch news for clients.
      */
     async getArticles(category?: DiscoverCategory, limit = 30) {
-        return this.discoverRepository.findArticles(category, limit);
+        const fetchLimit = Math.max(limit * 2, limit);
+        const articles = await this.discoverRepository.findArticles(category, fetchLimit);
+
+        return articles
+            .filter(article => this.isPersistedArticleSafe(
+                article.title,
+                article.publishedAt,
+                article.imageUrl,
+            ))
+            .slice(0, limit);
     }
 
     /**
@@ -38,50 +57,65 @@ export class DiscoverService {
      * scores, generates AI summaries, and saves to the DB.
      */
     async fetchAndStore(): Promise<void> {
-        this.logger.log('Starting automated Discover feed refresh...');
+        this.logVerbose('Starting automated Discover feed refresh...');
 
-        for (const [categoryString, query] of Object.entries(CATEGORY_QUERIES)) {
-            const category = categoryString as DiscoverCategory;
-
-            this.logger.log(`Fetching category: ${category} ("${query}")`);
+        for (const category of Object.values(DiscoverCategory)) {
+            const targetedQueries = this.buildTargetedQueries(category);
+            this.logVerbose(`Fetching category: ${category} (${targetedQueries.length} targeted queries)`);
 
             try {
-                const rawResults = await this.fetchFromSearxng(query);
+                if (targetedQueries.length === 0) {
+                    this.logger.warn(`No targeted queries configured for category: ${category}`);
+                    continue;
+                }
+
+                const rawResults = await this.fetchTargetedResults(targetedQueries);
                 if (!rawResults || rawResults.length === 0) {
                     this.logger.warn(`No results returned for category: ${category}`);
                     continue;
                 }
 
-                const normalized = this.normalizeResults(rawResults, category);
+                const dedupedRaw = this.deduplicateRawResults(rawResults);
+                const normalized = await this.normalizeResults(dedupedRaw, category);
                 const deduped = this.deduplicateArticles(normalized);
 
-                // Rank ALL articles first
-                for (const article of deduped) {
-                    article.rankScore = this.calculateRankScore(article);
-                }
+                const aiCandidates = deduped
+                    .sort((a, b) => this.calculatePreAiRankScore(b, category) - this.calculatePreAiRankScore(a, category))
+                    .slice(0, MAX_AI_VALIDATION_CANDIDATES);
 
-                // Sort by rank descending and take only top 10 to limit AI cost
-                const TOP_N = 10;
-                const topArticles = deduped
-                    .sort((a, b) => b.rankScore - a.rankScore)
-                    .slice(0, TOP_N);
+                const approvedArticles: NormalizedArticle[] = [];
 
-                for (const article of topArticles) {
+                for (const article of aiCandidates) {
                     // Check if we already have this article by URL. If so, skip AI calls to save $.
                     const existing = await this.discoverRepository.findBySourceUrl(article.sourceUrl);
                     if (existing) continue;
 
-                    // FIX 6: Image validation (HEAD request)
-                    article.imageUrl = await this.validateImageUrl(article.imageUrl);
-
-                    // FIX 3 & 4 & 8: AI Trust Verification (Two-Pass + Category match)
                     const isTrustworthy = await this.verifyArticleTrust(article);
                     if (!isTrustworthy) {
-                        this.logger.debug(`Article rejected by AI Trust Layer: ${article.sourceUrl}`);
+                        this.logDebug(`Article rejected by AI trust layer: ${article.sourceUrl}`);
                         continue;
                     }
 
-                    // Generate summaries + exam relevance using AiService
+                    const isExamRelevant = await this.verifyAspirantBenefit(article);
+                    if (!isExamRelevant) {
+                        this.logDebug(`Article rejected by AI self-challenge: ${article.sourceUrl}`);
+                        continue;
+                    }
+
+                    if (!this.passesNoImageExceptionPolicy(article)) {
+                        this.logDebug(`Article rejected due to no-image policy: ${article.sourceUrl}`);
+                        continue;
+                    }
+
+                    article.rankScore = this.calculateRankScore(article, category, isExamRelevant);
+                    approvedArticles.push(article);
+                }
+
+                const topArticles = approvedArticles
+                    .sort((a, b) => b.rankScore - a.rankScore)
+                    .slice(0, MAX_STORED_ARTICLES_PER_CATEGORY);
+
+                for (const article of topArticles) {
                     const [summary, examRelevance] = await Promise.all([
                         this.generateSummary(article),
                         this.generateExamRelevance(article),
@@ -100,73 +134,143 @@ export class DiscoverService {
             }
         }
 
-        this.logger.log('Completed automated Discover feed refresh.');
+        this.logVerbose('Completed automated Discover feed refresh.');
     }
 
     /**
      * Direct HTTP fetch to the private SearXNG instance.
      */
-    private async fetchFromSearxng(query: string): Promise<SearxngResult[]> {
+    private async fetchFromSearxng(query: string, pages = SEARXNG_PAGE_BATCH_COUNT): Promise<SearxngResult[]> {
         const fetchPage = async (page: number) => {
             const url = new URL('/search', this.searxngBaseUrl);
             url.searchParams.set('q', query);
             url.searchParams.set('format', 'json');
             url.searchParams.set('language', 'en-US'); // Enforce English
+            url.searchParams.set('engines', SEARXNG_ENGINE);
             url.searchParams.set('pageno', page.toString());
 
-            const response = await fetch(url.toString(), {
-                method: 'GET',
-                headers: { 'Accept': 'application/json' },
-            });
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), this.searxngRequestTimeoutMs);
+            try {
+                const response = await fetch(url.toString(), {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' },
+                    signal: controller.signal,
+                });
 
-            if (!response.ok) {
-                this.logger.warn(`SearXNG HTTP Error on page ${page}: ${response.status}`);
+                if (!response.ok) {
+                    this.logger.warn(`SearXNG HTTP error for query "${this.shortenQueryForLogs(query)}" page ${page}: ${response.status}`);
+                    return [];
+                }
+
+                const data = await response.json() as { results?: SearxngResult[] };
+                return (data.results || []) as SearxngResult[];
+            } catch (error) {
+                const message = error instanceof Error ? error.message : 'Unknown error';
+                this.logger.warn(`SearXNG fetch failure for query "${this.shortenQueryForLogs(query)}" page ${page}: ${message}`);
                 return [];
+            } finally {
+                clearTimeout(timeoutId);
             }
-            const data = await response.json();
-            return (data.results || []) as SearxngResult[];
         };
 
-        // Fetch 2 pages to ensure we get ~20 results before deduplication
-        const [page1, page2] = await Promise.all([fetchPage(1), fetchPage(2)]);
-        return [...page1, ...page2];
+        const pagePromises: Array<Promise<SearxngResult[]>> = [];
+        for (let page = 1; page <= pages; page += 1) {
+            pagePromises.push(fetchPage(page));
+        }
+
+        const pageResults = await Promise.all(pagePromises);
+        return pageResults.flat();
     }
 
-    private normalizeResults(raw: SearxngResult[], category: DiscoverCategory): NormalizedArticle[] {
-        return raw
-            .filter(item => this.isArticleFresh(item.publishedDate))
-            .filter(item => this.isSourceTrusted(item.url))
-            .map(item => {
-                const cleanedTitle = this.cleanTitle(item.title, item.content);
+    private buildTargetedQueries(category: DiscoverCategory): string[] {
+        const sourcePool = CATEGORY_SOURCE_POOLS[category] ?? [];
+        const categoryQueries = CATEGORY_TARGET_QUERIES[category] ?? [];
 
-                // Priority image extraction + HTML fallback
-                let bestImage = item.img_src || item.thumbnail || item.image || item.og_image || null;
-                if (!bestImage && item.content) {
-                    const imgMatch = item.content.match(/<img[^>]+src="([^">]+)"/);
-                    if (imgMatch && imgMatch[1]) {
-                        bestImage = imgMatch[1];
-                    }
+        return sourcePool.flatMap(domain =>
+            categoryQueries.map(keyword => `site:${domain} ${keyword}`),
+        );
+    }
+
+    private async fetchTargetedResults(targetedQueries: string[]): Promise<SearxngResult[]> {
+        const allResults: SearxngResult[] = [];
+
+        for (let index = 0; index < targetedQueries.length; index += this.fetchConcurrency) {
+            const batch = targetedQueries.slice(index, index + this.fetchConcurrency);
+            const settledResults = await Promise.allSettled(batch.map(query => this.fetchFromSearxng(query)));
+
+            for (let resultIndex = 0; resultIndex < settledResults.length; resultIndex += 1) {
+                const settled = settledResults[resultIndex];
+                if (settled.status === 'fulfilled') {
+                    allResults.push(...settled.value);
+                    continue;
+                }
+
+                const failedQuery = batch[resultIndex] ?? 'unknown query';
+                const reason = settled.reason instanceof Error ? settled.reason.message : 'Unknown error';
+                this.logger.warn(`SearXNG batch failure for query "${this.shortenQueryForLogs(failedQuery)}": ${reason}`);
+            }
+        }
+
+        return allResults;
+    }
+
+    private shortenQueryForLogs(query: string): string {
+        const MAX = 80;
+        if (query.length <= MAX) {
+            return query;
+        }
+        return `${query.slice(0, MAX)}...`;
+    }
+
+    private async normalizeResults(raw: SearxngResult[], category: DiscoverCategory): Promise<NormalizedArticle[]> {
+        const candidates = raw
+            .filter(item => this.isSourceTrusted(item.url))
+            .filter(item => !this.isNonNewsArticleType(item))
+            .filter(item => this.isArticleFresh(this.extractPublishedDate(item)));
+
+        const normalized = await Promise.all(
+            candidates.map(async item => {
+                const sourceDomain = this.extractDomain(item.url);
+                const publishedAt = this.extractPublishedDate(item);
+                if (!sourceDomain || !publishedAt) {
+                    return null;
+                }
+
+                const cleanSummary = this.stripHtml(item.content ?? '').trim();
+                const cleanedTitle = this.cleanTitle(item.title ?? '', cleanSummary);
+                if (!cleanedTitle || this.isGenericTitle(cleanedTitle)) {
+                    return null;
+                }
+
+                const bestImageCandidate = this.extractBestImage(item);
+                const imageUrl = await this.validateImageUrl(bestImageCandidate);
+                if (!imageUrl && !this.isHeadlineExtremelyStrong(cleanedTitle)) {
+                    return null;
                 }
 
                 return {
                     title: cleanedTitle,
-                    summary: item.content, // Temporary raw snippet; replaced later by AI
-                    source: item.engine || new URL(item.url).hostname.replace('www.', ''),
-                    sourceUrl: item.url,
-                    imageUrl: bestImage,
+                    summary: cleanSummary,
+                    source: sourceDomain,
+                    sourceUrl: this.normalizeUrl(item.url),
+                    imageUrl,
                     category,
-                    publishedAt: item.publishedDate ? new Date(item.publishedDate) : new Date(),
+                    publishedAt,
                     rankScore: 0,
-                };
-            });
+                } satisfies NormalizedArticle;
+            }),
+        );
+
+        return normalized.filter((article): article is NormalizedArticle => article !== null);
     }
 
     /**
-     * FIX 1: Reject old or dating-missing articles
+     * Reject old or date-missing articles.
      */
-    private isArticleFresh(publishedDateString?: string): boolean {
-        if (!publishedDateString) return false;
-        const publishedDate = new Date(publishedDateString);
+    private isArticleFresh(publishedDateInput?: Date | string | null): boolean {
+        if (!publishedDateInput) return false;
+        const publishedDate = new Date(publishedDateInput);
         if (isNaN(publishedDate.getTime())) return false;
 
         const now = new Date();
@@ -175,11 +279,12 @@ export class DiscoverService {
     }
 
     /**
-     * FIX 2: Allow only trusted domains
+     * Allow only trusted domains.
      */
     private isSourceTrusted(url: string): boolean {
         try {
-            const hostname = new URL(url).hostname.replace(/^www\./, '').toLowerCase();
+            const hostname = this.extractDomain(url);
+            if (!hostname) return false;
             return TRUSTED_DOMAINS.some(domain => hostname === domain || hostname.endsWith(`.${domain}`));
         } catch {
             return false;
@@ -187,11 +292,11 @@ export class DiscoverService {
     }
 
     /**
-     * FIX 6: Validate image URLs natively via HTTP HEAD
+     * Validate image URLs natively via HTTP HEAD.
      */
     private async validateImageUrl(url: string | null): Promise<string | null> {
         if (!url) return null;
-        if (url.startsWith('data:')) return url;
+        if (!/^https?:\/\//i.test(url)) return null;
 
         try {
             const controller = new AbortController();
@@ -210,7 +315,7 @@ export class DiscoverService {
     }
 
     /**
-     * FIX 3 & STEP 2: Clean generic titles before saving.
+     * Clean generic titles before saving.
      * Removes noisy strings and falls back to snippet sentence if title is weak.
      */
     private cleanTitle(rawTitle: string, snippet: string): string {
@@ -236,6 +341,8 @@ export class DiscoverService {
             /-\s*The Hindu.*/gi,
             /-\s*Times of India.*/gi,
             /-\s*Indian Express.*/gi,
+            /\|\s*Google News.*/gi,
+            /-\s*Google News.*/gi,
         ];
 
         for (const phrase of noisePhrases) {
@@ -246,18 +353,112 @@ export class DiscoverService {
         cleaned = cleaned.replace(/[\s|\-]+$/, '').trim();
 
         // If title becomes too short (less than 5 words), try to use first sentence of the snippet
-        const wordCount = cleaned.split(/\s+/).length;
+        const wordCount = cleaned.split(/\s+/).filter(Boolean).length;
         if (wordCount < 5 && snippet) {
-            // Strip HTML tags from snippet first
-            const plainSnippet = snippet.replace(/<[^>]*>?/gm, '');
-            const match = plainSnippet.match(/[^.!?]+[.!?]/);
+            const match = snippet.match(/[^.!?]+[.!?]/);
             if (match && match[0].split(/\s+/).length >= 5) {
                 cleaned = match[0].trim();
             }
         }
 
-        // Final fallback if absolutely everything fails
-        return cleaned.length > 0 ? cleaned : "Important Update in Current Affairs";
+        return cleaned.length > 0 ? cleaned : 'Important update in current affairs';
+    }
+
+    private isGenericTitle(title: string): boolean {
+        const weakTitlePatterns = [
+            /latest news/i,
+            /breaking news/i,
+            /google news/i,
+            /world news/i,
+            /^news$/i,
+            /^headlines$/i,
+            /^top stories$/i,
+        ];
+
+        return weakTitlePatterns.some(pattern => pattern.test(title.trim()));
+    }
+
+    private isHeadlineExtremelyStrong(title: string): boolean {
+        const wordCount = title.split(/\s+/).filter(Boolean).length;
+        return wordCount >= 8 && wordCount <= 18 && !this.isGenericTitle(title);
+    }
+
+    private extractPublishedDate(item: SearxngResult): Date | null {
+        const rawDate = item.publishedDate ?? item.published_date ?? item.published_at ?? item.published;
+        if (!rawDate) {
+            return null;
+        }
+
+        const parsed = new Date(rawDate);
+        if (isNaN(parsed.getTime())) {
+            return null;
+        }
+
+        return parsed;
+    }
+
+    private extractBestImage(item: SearxngResult): string | null {
+        return item.thumbnail || item.img_src || item.image || item.og_image || null;
+    }
+
+    private stripHtml(content: string): string {
+        return content.replace(/<[^>]*>?/gm, '').replace(/\s+/g, ' ').trim();
+    }
+
+    private isNonNewsArticleType(item: SearxngResult): boolean {
+        const combinedText = `${item.title ?? ''} ${item.content ?? ''} ${item.url ?? ''}`.toLowerCase();
+        return NON_NEWS_PATTERNS.some(pattern => pattern.test(combinedText));
+    }
+
+    private passesNoImageExceptionPolicy(article: NormalizedArticle): boolean {
+        if (article.imageUrl) {
+            return true;
+        }
+
+        return this.isHeadlineExtremelyStrong(article.title);
+    }
+
+    private deduplicateRawResults(results: SearxngResult[]): SearxngResult[] {
+        const unique = new Map<string, SearxngResult>();
+
+        for (const item of results) {
+            const normalizedUrl = this.normalizeUrl(item.url);
+            if (!unique.has(normalizedUrl)) {
+                unique.set(normalizedUrl, item);
+            }
+        }
+
+        return Array.from(unique.values());
+    }
+
+    private normalizeUrl(url: string): string {
+        try {
+            const parsed = new URL(url);
+            parsed.hash = '';
+
+            // Drop common tracking params to avoid duplicate URLs for same article.
+            const trackingParams = ['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content', 'ref', 'fbclid'];
+            for (const param of trackingParams) {
+                parsed.searchParams.delete(param);
+            }
+
+            const normalizedPath = parsed.pathname.length > 1
+                ? parsed.pathname.replace(/\/+$/, '')
+                : parsed.pathname;
+            const normalizedHost = parsed.hostname.replace(/^www\./, '');
+
+            return `${parsed.protocol}//${normalizedHost}${normalizedPath}${parsed.search}`;
+        } catch {
+            return url;
+        }
+    }
+
+    private extractDomain(url: string): string | null {
+        try {
+            return new URL(url).hostname.replace(/^www\./, '').toLowerCase();
+        } catch {
+            return null;
+        }
     }
 
     private deduplicateArticles(articles: NormalizedArticle[]): NormalizedArticle[] {
@@ -274,36 +475,91 @@ export class DiscoverService {
         return Array.from(unique.values());
     }
 
-    private calculateRankScore(article: NormalizedArticle): number {
-        let score = 50; // Base score
+    private calculatePreAiRankScore(article: NormalizedArticle, category: DiscoverCategory): number {
+        let score = 0;
+        score += this.calculateFreshnessScore(article.publishedAt);
+        score += this.calculateSourceTrustScore(article, category);
+        score += this.calculateHeadlineClarityScore(article.title);
+        score += article.imageUrl ? 15 : -12;
+        return score;
+    }
 
-        // Freshness (Granular tiers)
-        const now = new Date();
-        const diffHours = (now.getTime() - article.publishedAt.getTime()) / (1000 * 60 * 60);
-        if (diffHours < 6) score += 30;
-        else if (diffHours < 24) score += 20;
-        else if (diffHours < 48) score += 10;
-        else score -= 10; // Penalty for old news
+    private calculateRankScore(article: NormalizedArticle, category: DiscoverCategory, isExamRelevant: boolean): number {
+        let score = 0;
 
-        // Penalty for missing image (makes feed look bad)
-        if (!article.imageUrl) {
-            score -= 15;
-        }
-
-        // Title clarity bonus (penalize extremely short titles or generic ones)
-        const wordCount = article.title.split(/\s+/).length;
-        if (wordCount >= 6 && wordCount <= 15) {
-            score += 10; // Goldilocks zone for headlines
-        } else if (wordCount < 5) {
-            score -= 10;
-        }
-
-        // Source credibility bonus (all are trusted at this point, but can scale later)
-        if (TRUSTED_DOMAINS.some(ts => article.source.toLowerCase().includes(ts))) {
-            score += 15;
-        }
+        score += this.calculateFreshnessScore(article.publishedAt);
+        score += this.calculateSourceTrustScore(article, category);
+        score += this.calculateHeadlineClarityScore(article.title);
+        score += this.calculateExamRelevanceSignalScore(article, category);
+        score += isExamRelevant ? 25 : -25;
+        score += article.imageUrl ? 10 : -10;
 
         return score;
+    }
+
+    private calculateFreshnessScore(publishedAt: Date): number {
+        const now = new Date();
+        const diffHours = (now.getTime() - publishedAt.getTime()) / (1000 * 60 * 60);
+
+        if (diffHours < 6) return 40;
+        if (diffHours < 24) return 30;
+        if (diffHours < 48) return 20;
+        if (diffHours <= FRESHNESS_THRESHOLD_HOURS) return 10;
+        return -30;
+    }
+
+    private calculateSourceTrustScore(article: NormalizedArticle, category: DiscoverCategory): number {
+        const sourcePool = CATEGORY_SOURCE_POOLS[category] ?? [];
+        if (sourcePool.some(domain => article.source === domain || article.source.endsWith(`.${domain}`))) {
+            return 30;
+        }
+
+        if (TRUSTED_DOMAINS.some(domain => article.source === domain || article.source.endsWith(`.${domain}`))) {
+            return 15;
+        }
+
+        return -20;
+    }
+
+    private calculateHeadlineClarityScore(title: string): number {
+        const wordCount = title.split(/\s+/).filter(Boolean).length;
+        if (this.isGenericTitle(title)) return -30;
+        if (wordCount >= 8 && wordCount <= 16) return 20;
+        if (wordCount >= 6 && wordCount <= 20) return 12;
+        if (wordCount < 5) return -20;
+        return 0;
+    }
+
+    private calculateExamRelevanceSignalScore(article: NormalizedArticle, category: DiscoverCategory): number {
+        const categoryQueries = CATEGORY_TARGET_QUERIES[category] ?? [];
+        const text = `${article.title} ${article.summary}`.toLowerCase();
+
+        let matches = 0;
+        for (const query of categoryQueries) {
+            const queryTokens = query.toLowerCase().split(/\s+/).filter(token => token.length > 3);
+            const hasSignal = queryTokens.some(token => text.includes(token));
+            if (hasSignal) {
+                matches += 1;
+            }
+        }
+
+        return Math.min(matches * 6, 24);
+    }
+
+    private isPersistedArticleSafe(title: string, publishedAt: Date | string, imageUrl: string | null): boolean {
+        if (!this.isArticleFresh(publishedAt)) {
+            return false;
+        }
+
+        if (this.isGenericTitle(title)) {
+            return false;
+        }
+
+        if (imageUrl && /^https?:\/\//i.test(imageUrl)) {
+            return true;
+        }
+
+        return this.isHeadlineExtremelyStrong(title);
     }
 
     private async generateSummary(article: NormalizedArticle): Promise<string> {
@@ -349,7 +605,7 @@ RULES:
     }
 
     /**
-     * FIX 3 & 4 & 8: AI Trust Verification (Two-Pass Logic + Category Match)
+     * AI Pass 1: Current + trusted + category-aligned editorial validation.
      */
     private async verifyArticleTrust(article: NormalizedArticle): Promise<boolean> {
         try {
@@ -365,7 +621,6 @@ Answer these questions silently:
 2. Is the source likely a credible news outlet?
 3. Is this article factual and free of clickbait?
 4. Does this genuinely match the expected category '${article.category}'?
-5. (Self-Challenge) Would an IAS or SSC aspirant genuinely find this important for their exam preparation, or is it just generic noise?
 
 Based on your harsh editorial evaluation, decide if it should be published.
 Respond with ONLY "APPROVE" or "REJECT". No other text.`;
@@ -373,12 +628,50 @@ Respond with ONLY "APPROVE" or "REJECT". No other text.`;
             const result = await this.aiService.generateCompletion([
                 { role: 'system', content: 'You are a flawless editorial gateway.' },
                 { role: 'user', content: prompt }
-            ], 'gpt-4o-mini'); // Can be slightly lighter model to save costs, but 4o-mini is standard
+            ]);
 
             return result.content?.trim().toUpperCase() === 'APPROVE';
         } catch (error) {
             // Fail-safe: if AI check fails entirely, reject to preserve trust
             return false;
+        }
+    }
+
+    /**
+     * AI Pass 2: Self-challenge for UPSC/SSC value.
+     */
+    private async verifyAspirantBenefit(article: NormalizedArticle): Promise<boolean> {
+        try {
+            const prompt = `You are a ruthless exam relevance reviewer.
+Decide if this article is genuinely useful for UPSC/SSC aspirants.
+
+Title: ${article.title}
+Snippet: ${article.summary}
+Category: ${article.category}
+
+Reject generic lifestyle, evergreen explainers, promotional content, and weak updates.
+Respond with ONLY "APPROVE" or "REJECT".`;
+
+            const result = await this.aiService.generateCompletion([
+                { role: 'system', content: 'You only approve high-value exam-relevant current affairs.' },
+                { role: 'user', content: prompt },
+            ]);
+
+            return result.content?.trim().toUpperCase() === 'APPROVE';
+        } catch (error) {
+            return false;
+        }
+    }
+
+    private logVerbose(message: string): void {
+        if (!this.isProduction) {
+            this.logger.log(message);
+        }
+    }
+
+    private logDebug(message: string): void {
+        if (!this.isProduction) {
+            this.logger.debug(message);
         }
     }
 }
