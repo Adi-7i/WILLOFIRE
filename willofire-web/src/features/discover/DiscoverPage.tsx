@@ -19,11 +19,11 @@ import { Card } from '@/components/ui/card';
 const TABS: { id: string; label: string; backendCategory: BackendCategory | null }[] = [
     { id: 'headlines', label: "Today's Headlines", backendCategory: null }, // Shows highest ranked across all
     { id: 'economy', label: 'Economy', backendCategory: 'economy' },
-    { id: 'international', label: 'International Relations', backendCategory: 'international' },
-    { id: 'science', label: 'Science & Tech', backendCategory: 'science' },
-    { id: 'polity', label: 'Polity', backendCategory: 'india' }, // Mapping national polity to 'india' category
-    { id: 'environment', label: 'Environment', backendCategory: 'world' }, // Example fallback mapping
-    { id: 'defense', label: 'Defense', backendCategory: 'india' },
+    { id: 'polity', label: 'Polity', backendCategory: 'polity' },
+    { id: 'international', label: 'International Relations', backendCategory: 'international-relations' },
+    { id: 'science', label: 'Science & Tech', backendCategory: 'science-tech' },
+    { id: 'environment', label: 'Environment', backendCategory: 'environment' },
+    { id: 'defense', label: 'Defense', backendCategory: 'defense' },
 ];
 
 export function DiscoverPage() {

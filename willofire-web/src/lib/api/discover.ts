@@ -1,6 +1,6 @@
 import { apiClient } from './client';
 
-export type BackendCategory = 'india' | 'world' | 'economy' | 'science' | 'international';
+export type BackendCategory = 'todays-headlines' | 'economy' | 'polity' | 'international-relations' | 'science-tech' | 'environment' | 'defense';
 
 export interface DiscoverArticle {
     _id: string;

@@ -115,16 +115,54 @@ export class DiscoverService {
     }
 
     private normalizeResults(raw: SearxngResult[], category: DiscoverCategory): NormalizedArticle[] {
-        return raw.map(item => ({
-            title: item.title,
-            summary: item.content, // Temporary raw snippet; replaced later by AI
-            source: item.engine || new URL(item.url).hostname.replace('www.', ''),
-            sourceUrl: item.url,
-            imageUrl: item.img_src || null,
-            category,
-            publishedAt: item.publishedDate ? new Date(item.publishedDate) : new Date(),
-            rankScore: 0,
-        }));
+        return raw.map(item => {
+            const cleanedTitle = this.cleanTitle(item.title, item.content);
+            return {
+                title: cleanedTitle,
+                summary: item.content, // Temporary raw snippet; replaced later by AI
+                source: item.engine || new URL(item.url).hostname.replace('www.', ''),
+                sourceUrl: item.url,
+                imageUrl: item.thumbnail || item.img_src || item.image || null,
+                category,
+                publishedAt: item.publishedDate ? new Date(item.publishedDate) : new Date(),
+                rankScore: 0,
+            };
+        });
+    }
+
+    /**
+     * FIX 3: Clean generic titles before saving.
+     * Removes noisy strings and falls back to snippet sentence if title is weak.
+     */
+    private cleanTitle(rawTitle: string, snippet: string): string {
+        let cleaned = rawTitle.trim();
+
+        // Remove common generic news noise (case-insensitive)
+        const noisePhrases = [
+            /latest news/gi,
+            /breaking news/gi,
+            /today's news/gi,
+            /google news/gi,
+            /world news/gi,
+            /india news/gi,
+            /\|.*/gi, // Often removes trailing "| Source Name"
+            /-.*/gi    // Often removes trailing "- Source Name"
+        ];
+
+        for (const phrase of noisePhrases) {
+            cleaned = cleaned.replace(phrase, '').trim();
+        }
+
+        // If title becomes too short, try to use first sentence of the snippet
+        if (cleaned.length < 15 && snippet) {
+            const match = snippet.match(/[^.!?]+[.!?]/);
+            if (match && match[0].length > 20) {
+                cleaned = match[0].trim();
+            }
+        }
+
+        // Final fallback if absolutely everything fails
+        return cleaned.length > 0 ? cleaned : "Important Update in Current Affairs";
     }
 
     private deduplicateArticles(articles: NormalizedArticle[]): NormalizedArticle[] {
@@ -161,6 +199,7 @@ export class DiscoverService {
 
     private async generateSummary(article: NormalizedArticle): Promise<string> {
         try {
+            // FIX 4: Use cleaned title + snippet for high-quality input
             const prompt = `Write a concise, factual, and clean 3-line summary of the following news snippet.\n\nTitle: ${article.title}\nSnippet: ${article.summary}\n\nRULES:\n- Max 3 short sentences.\n- Factual only. No clickbait.\n- Readable tone.`;
 
             const result = await this.aiService.generateCompletion([
@@ -177,6 +216,7 @@ export class DiscoverService {
 
     private async generateExamRelevance(article: NormalizedArticle): Promise<string> {
         try {
+            // FIX 5: Use cleaned title + snippet for precise topic modeling
             const prompt = `Based on the following news, output one short sentence stating its relevance to competitive exams (like UPSC, SSC).\n\nTitle: ${article.title}\nSnippet: ${article.summary}\n\nRULES:\n- Format exactly like: "Relevant for [Topic]." \n- Example: "Relevant for international relations and diplomacy."\n- Max 1 sentence. Make it precise.`;
 
             const result = await this.aiService.generateCompletion([

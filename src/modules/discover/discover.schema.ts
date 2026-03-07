@@ -22,7 +22,7 @@ export class DiscoverArticle extends Document {
     @Prop({ type: String, default: null })
     imageUrl!: string | null;
 
-    @Prop({ required: true, enum: DiscoverCategory, index: true })
+    @Prop({ type: String, enum: DiscoverCategory, index: true, required: true })
     category!: DiscoverCategory;
 
     @Prop({ required: true, type: Date })

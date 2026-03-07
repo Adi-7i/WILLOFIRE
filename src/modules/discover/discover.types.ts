@@ -1,9 +1,11 @@
 export enum DiscoverCategory {
-    INDIA = 'india',
-    WORLD = 'world',
+    TODAYS_HEADLINES = 'todays-headlines',
     ECONOMY = 'economy',
-    SCIENCE = 'science',
-    INTERNATIONAL = 'international',
+    POLITY = 'polity',
+    INTERNATIONAL_RELATIONS = 'international-relations',
+    SCIENCE_TECH = 'science-tech',
+    ENVIRONMENT = 'environment',
+    DEFENSE = 'defense',
 }
 
 export interface SearxngResult {
@@ -11,6 +13,8 @@ export interface SearxngResult {
     url: string;
     content: string;
     img_src?: string;
+    thumbnail?: string;
+    image?: string;
     publishedDate?: string;
     engine: string;
     parsed_url: string[];
@@ -32,10 +36,12 @@ export interface NormalizedArticle {
     rankScore: number;
 }
 
-export const CATEGORY_QUERIES: Record<DiscoverCategory, string> = {
-    [DiscoverCategory.INDIA]: 'latest news india',
-    [DiscoverCategory.WORLD]: 'latest world news',
-    [DiscoverCategory.ECONOMY]: 'latest economy news',
-    [DiscoverCategory.SCIENCE]: 'latest science technology news',
-    [DiscoverCategory.INTERNATIONAL]: 'latest international affairs news',
+export const CATEGORY_QUERIES: Partial<Record<DiscoverCategory, string>> = {
+    // TODAYS_HEADLINES intentionally omitted, as it's aggregated from top articles, not searched directly in SearXNG
+    [DiscoverCategory.ECONOMY]: 'india economy current affairs',
+    [DiscoverCategory.POLITY]: 'constitution supreme court india latest',
+    [DiscoverCategory.INTERNATIONAL_RELATIONS]: 'diplomacy india global affairs',
+    [DiscoverCategory.SCIENCE_TECH]: 'science technology india latest',
+    [DiscoverCategory.ENVIRONMENT]: 'climate biodiversity india latest',
+    [DiscoverCategory.DEFENSE]: 'defense military strategic affairs india latest',
 };
