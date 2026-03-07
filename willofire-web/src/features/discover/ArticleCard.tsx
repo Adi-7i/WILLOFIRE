@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { Calendar, Globe2 } from 'lucide-react';
 import { DiscoverArticle } from '@/lib/api/discover';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
@@ -10,6 +11,8 @@ interface ArticleCardProps {
 }
 
 export function ArticleCard({ article }: ArticleCardProps) {
+    const [imageError, setImageError] = useState(false);
+
     const formattedDate = new Intl.DateTimeFormat('en-US', {
         month: 'short',
         day: 'numeric',
@@ -20,13 +23,14 @@ export function ArticleCard({ article }: ArticleCardProps) {
         <Card className="flex flex-col h-full overflow-hidden transition-all hover:shadow-md border-slate-200">
             {/* Image Block */}
             <div className="relative w-full h-48 bg-slate-100 shrink-0">
-                {article.imageUrl ? (
+                {article.imageUrl && !imageError ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                         src={article.imageUrl}
                         alt={article.title}
                         className="w-full h-full object-cover"
                         loading="lazy"
+                        onError={() => setImageError(true)}
                     />
                 ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 bg-slate-50">

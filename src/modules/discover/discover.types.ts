@@ -15,6 +15,7 @@ export interface SearxngResult {
     img_src?: string;
     thumbnail?: string;
     image?: string;
+    og_image?: string;
     publishedDate?: string;
     engine: string;
     parsed_url: string[];
@@ -38,10 +39,10 @@ export interface NormalizedArticle {
 
 export const CATEGORY_QUERIES: Partial<Record<DiscoverCategory, string>> = {
     // TODAYS_HEADLINES intentionally omitted, as it's aggregated from top articles, not searched directly in SearXNG
-    [DiscoverCategory.ECONOMY]: 'india economy current affairs',
-    [DiscoverCategory.POLITY]: 'constitution supreme court india latest',
-    [DiscoverCategory.INTERNATIONAL_RELATIONS]: 'diplomacy india global affairs',
-    [DiscoverCategory.SCIENCE_TECH]: 'science technology india latest',
-    [DiscoverCategory.ENVIRONMENT]: 'climate biodiversity india latest',
-    [DiscoverCategory.DEFENSE]: 'defense military strategic affairs india latest',
+    [DiscoverCategory.ECONOMY]: 'india economy inflation gdp rbi policy latest news',
+    [DiscoverCategory.POLITY]: 'supreme court constitution law india latest decision',
+    [DiscoverCategory.INTERNATIONAL_RELATIONS]: 'india diplomacy international relations geopolitics summit',
+    [DiscoverCategory.SCIENCE_TECH]: 'science technology breakthrough ai research space launch',
+    [DiscoverCategory.ENVIRONMENT]: 'climate change biodiversity environment policy india',
+    [DiscoverCategory.DEFENSE]: 'india military defense missile security strategy',
 };

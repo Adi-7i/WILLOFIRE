@@ -95,34 +95,50 @@ export class DiscoverService {
      * Direct HTTP fetch to the private SearXNG instance.
      */
     private async fetchFromSearxng(query: string): Promise<SearxngResult[]> {
-        const url = new URL('/search', this.searxngBaseUrl);
-        url.searchParams.set('q', query);
-        url.searchParams.set('format', 'json');
-        url.searchParams.set('language', 'en-US'); // Enforce English
-        // You might want to constrain time to 24h depending on SearXNG config: url.searchParams.set('time_range', 'day');
+        const fetchPage = async (page: number) => {
+            const url = new URL('/search', this.searxngBaseUrl);
+            url.searchParams.set('q', query);
+            url.searchParams.set('format', 'json');
+            url.searchParams.set('language', 'en-US'); // Enforce English
+            url.searchParams.set('pageno', page.toString());
 
-        const response = await fetch(url.toString(), {
-            method: 'GET',
-            headers: { 'Accept': 'application/json' },
-        });
+            const response = await fetch(url.toString(), {
+                method: 'GET',
+                headers: { 'Accept': 'application/json' },
+            });
 
-        if (!response.ok) {
-            throw new Error(`SearXNG HTTP Error: ${response.status} ${response.statusText}`);
-        }
+            if (!response.ok) {
+                this.logger.warn(`SearXNG HTTP Error on page ${page}: ${response.status}`);
+                return [];
+            }
+            const data = await response.json();
+            return (data.results || []) as SearxngResult[];
+        };
 
-        const data = await response.json();
-        return (data.results || []) as SearxngResult[];
+        // Fetch 2 pages to ensure we get ~20 results before deduplication
+        const [page1, page2] = await Promise.all([fetchPage(1), fetchPage(2)]);
+        return [...page1, ...page2];
     }
 
     private normalizeResults(raw: SearxngResult[], category: DiscoverCategory): NormalizedArticle[] {
         return raw.map(item => {
             const cleanedTitle = this.cleanTitle(item.title, item.content);
+
+            // Priority image extraction + HTML fallback
+            let bestImage = item.img_src || item.thumbnail || item.image || item.og_image || null;
+            if (!bestImage && item.content) {
+                const imgMatch = item.content.match(/<img[^>]+src="([^">]+)"/);
+                if (imgMatch && imgMatch[1]) {
+                    bestImage = imgMatch[1];
+                }
+            }
+
             return {
                 title: cleanedTitle,
                 summary: item.content, // Temporary raw snippet; replaced later by AI
                 source: item.engine || new URL(item.url).hostname.replace('www.', ''),
                 sourceUrl: item.url,
-                imageUrl: item.thumbnail || item.img_src || item.image || null,
+                imageUrl: bestImage,
                 category,
                 publishedAt: item.publishedDate ? new Date(item.publishedDate) : new Date(),
                 rankScore: 0,
@@ -131,13 +147,13 @@ export class DiscoverService {
     }
 
     /**
-     * FIX 3: Clean generic titles before saving.
+     * FIX 3 & STEP 2: Clean generic titles before saving.
      * Removes noisy strings and falls back to snippet sentence if title is weak.
      */
     private cleanTitle(rawTitle: string, snippet: string): string {
         let cleaned = rawTitle.trim();
 
-        // Remove common generic news noise (case-insensitive)
+        // Specific targeted source removal
         const noisePhrases = [
             /latest news/gi,
             /breaking news/gi,
@@ -145,18 +161,34 @@ export class DiscoverService {
             /google news/gi,
             /world news/gi,
             /india news/gi,
-            /\|.*/gi, // Often removes trailing "| Source Name"
-            /-.*/gi    // Often removes trailing "- Source Name"
+            /\|\s*BBC.*/gi,
+            /\|\s*CNN.*/gi,
+            /\|\s*Reuters.*/gi,
+            /\|\s*The Hindu.*/gi,
+            /\|\s*Times of India.*/gi,
+            /\|\s*Indian Express.*/gi,
+            /-\s*BBC.*/gi,
+            /-\s*CNN.*/gi,
+            /-\s*Reuters.*/gi,
+            /-\s*The Hindu.*/gi,
+            /-\s*Times of India.*/gi,
+            /-\s*Indian Express.*/gi,
         ];
 
         for (const phrase of noisePhrases) {
             cleaned = cleaned.replace(phrase, '').trim();
         }
 
-        // If title becomes too short, try to use first sentence of the snippet
-        if (cleaned.length < 15 && snippet) {
-            const match = snippet.match(/[^.!?]+[.!?]/);
-            if (match && match[0].length > 20) {
+        // Clean up trailing separators if any remain
+        cleaned = cleaned.replace(/[\s|\-]+$/, '').trim();
+
+        // If title becomes too short (less than 5 words), try to use first sentence of the snippet
+        const wordCount = cleaned.split(/\s+/).length;
+        if (wordCount < 5 && snippet) {
+            // Strip HTML tags from snippet first
+            const plainSnippet = snippet.replace(/<[^>]*>?/gm, '');
+            const match = plainSnippet.match(/[^.!?]+[.!?]/);
+            if (match && match[0].split(/\s+/).length >= 5) {
                 cleaned = match[0].trim();
             }
         }
@@ -182,16 +214,31 @@ export class DiscoverService {
     private calculateRankScore(article: NormalizedArticle): number {
         let score = 50; // Base score
 
-        // Freshness: +20 if published today
+        // Freshness (Granular tiers)
         const now = new Date();
         const diffHours = (now.getTime() - article.publishedAt.getTime()) / (1000 * 60 * 60);
-        if (diffHours < 24) {
-            score += 20;
-        }
+        if (diffHours < 6) score += 30;
+        else if (diffHours < 24) score += 20;
+        else if (diffHours < 48) score += 10;
+        else score -= 10; // Penalty for old news
 
         // Penalty for missing image (makes feed look bad)
         if (!article.imageUrl) {
+            score -= 15;
+        }
+
+        // Title clarity bonus (penalize extremely short titles or generic ones)
+        const wordCount = article.title.split(/\s+/).length;
+        if (wordCount >= 6 && wordCount <= 15) {
+            score += 10; // Goldilocks zone for headlines
+        } else if (wordCount < 5) {
             score -= 10;
+        }
+
+        // Source credibility bonus
+        const trustedSources = ['thehindu', 'indianexpress', 'reuters', 'bbc', 'bloomberg', 'economictimes', 'livemint'];
+        if (trustedSources.some(ts => article.source.toLowerCase().includes(ts))) {
+            score += 15;
         }
 
         return score;

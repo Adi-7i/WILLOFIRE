@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { Calendar, Globe2 } from 'lucide-react';
 import { DiscoverArticle } from '@/lib/api/discover';
 import { Card } from '@/components/ui/card';
@@ -10,6 +11,8 @@ interface FeaturedCardProps {
 }
 
 export function FeaturedCard({ article }: FeaturedCardProps) {
+    const [imageError, setImageError] = useState(false);
+
     const formattedDate = new Intl.DateTimeFormat('en-US', {
         month: 'short',
         day: 'numeric',
@@ -25,28 +28,29 @@ export function FeaturedCard({ article }: FeaturedCardProps) {
         >
             <Card className="flex flex-col lg:flex-row h-full overflow-hidden transition-all hover:shadow-lg border-slate-200">
                 {/* Image Block (takes 1/3 width on large screens) */}
-                <div className="relative w-full lg:w-2/5 h-64 lg:h-auto bg-slate-100 shrink-0 border-b lg:border-b-0 lg:border-r border-slate-100">
-                    {article.imageUrl ? (
+                <div className="md:w-2/5 shrink-0 relative min-h-[240px] md:min-h-full bg-slate-100 border-r border-slate-100 overflow-hidden">
+                    {article.imageUrl && !imageError ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
                             src={article.imageUrl}
                             alt={article.title}
-                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                            className="w-full h-full object-cover hover:scale-105 transition-transform duration-500"
                             loading="lazy"
+                            onError={() => setImageError(true)}
                         />
                     ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 bg-slate-50">
+                        <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 bg-slate-50 absolute inset-0">
                             <Globe2 className="h-12 w-12 mb-3 opacity-50" />
                             <span className="text-sm font-medium">No Image Available</span>
                         </div>
                     )}
-                    {/* Floating Source Tag over image */}
-                    <div className="absolute top-4 left-4">
-                        <Badge variant="secondary" className="bg-white/90 backdrop-blur-sm text-slate-900 border-0 shadow-sm px-3 py-1">
-                            {article.source}
-                        </Badge>
-                    </div>
+                </div>        {/* Floating Source Tag over image */}
+                <div className="absolute top-4 left-4">
+                    <Badge variant="secondary" className="bg-white/90 backdrop-blur-sm text-slate-900 border-0 shadow-sm px-3 py-1">
+                        {article.source}
+                    </Badge>
                 </div>
+
 
                 {/* Content Block */}
                 <div className="p-6 flex flex-col flex-1">
