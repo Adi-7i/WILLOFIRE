@@ -1,5 +1,4 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
-import { Cron } from '@nestjs/schedule';
 import { ConfigService } from '@nestjs/config';
 
 import { DiscoverService } from './discover.service';
@@ -17,32 +16,18 @@ export class DiscoverScheduler implements OnModuleInit {
     }
 
     /**
-     * Run an initial fetch when the module starts up, rather than
-     * forcing the user to wait a full hour for the first feed.
+     * Stubbed out during rebuild.
      */
     async onModuleInit() {
-        this.logVerbose('Executing initial Discover feed fetch on bootstrap...');
-        // Execute asynchronously so it doesn't block app startup
-        this.runFetchSafely();
+        this.logVerbose('DiscoverScheduler module initialized. Auto-fetch disabled.');
     }
 
     /**
-     * Runs exactly once every hour at minute 0.
-     * Cron is more predictable and operationally safer than @Interval.
+     * Scheduled runs disabled pending rebuild.
      */
-    @Cron('0 * * * *')
+    // @Cron('0 * * * *')
     async handleCron() {
-        this.logVerbose('Executing scheduled Discover feed fetch...');
-        await this.runFetchSafely();
-    }
-
-    private async runFetchSafely() {
-        try {
-            await this.discoverService.fetchAndStore();
-        } catch (error) {
-            // Unhandled errors here must be caught so the scheduler thread doesn't crash
-            this.logger.error(`Critical error in Discover scheduler: ${(error as Error).message}`, (error as Error).stack);
-        }
+        this.logVerbose('Discover cron triggered, but ignored (disabled during rebuild).');
     }
 
     private logVerbose(message: string): void {
