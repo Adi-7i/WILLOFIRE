@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { FileUp, Loader2 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
-import { ProcessingState } from '@/components/shared/pdfs/ProcessingState';
 
 type UploadState = 'idle' | 'uploading' | 'processing' | 'failed';
 
@@ -104,9 +103,9 @@ export function UploadDropzone({
                             <FileUp className="h-5 w-5 text-[#9AA3B2]" />
                         </div>
                         <p className="text-sm font-medium text-[#E6EAF2]">
-                            Drop your study material here or click to upload
+                            Upload your PDF or drag and drop here
                         </p>
-                        <p className="mt-1 text-xs text-[#9AA3B2]">PDF up to 10MB</p>
+                        <p className="mt-1 text-xs text-[#9AA3B2]">Max file size: 10MB</p>
                     </div>
                 )}
 
@@ -124,8 +123,9 @@ export function UploadDropzone({
                 )}
 
                 {effectiveState === 'processing' && (
-                    <div className="mx-auto max-w-xl">
-                        <ProcessingState />
+                    <div className="mx-auto max-w-xl text-center">
+                        <p className="text-sm font-medium text-[#E6EAF2]">Preparing document...</p>
+                        <p className="mt-1 text-xs text-[#9AA3B2]">Optimizing your file for AI interactions</p>
                     </div>
                 )}
 
