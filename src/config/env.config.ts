@@ -76,9 +76,3 @@ export const storageConfig = registerAs('storage', () => ({
         sasExpiryHours: parseInt(process.env.BLOB_SAS_EXPIRY_HOURS ?? '24', 10),
     },
 }));
-
-// ── Discover Engine config ──────────────────────────────────────────────────
-export const discoverConfig = registerAs('discover', () => ({
-    searxngBaseUrl: process.env.SEARXNG_BASE_URL ?? 'http://localhost:8080',
-    fetchIntervalMs: 60 * 60 * 1000, // 1 hour by default
-}));
