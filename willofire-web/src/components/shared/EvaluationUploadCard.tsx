@@ -58,28 +58,28 @@ export function EvaluationUploadCard({ state, progress, errorMessage, onSubmit }
     if (state === 'completed') return null;
 
     return (
-        <div className="rounded-xl border border-slate-200 bg-white p-6 md:p-8 shadow-sm mb-8 animate-in fade-in duration-500">
+        <div className="rounded-xl border border-border bg-card p-6 md:p-8 shadow-sm mb-8 animate-in fade-in duration-500">
             <div className="mb-6">
-                <h2 className="text-xl font-bold text-slate-900">Evaluate Your Answer</h2>
-                <p className="text-sm text-slate-500 mt-1">Upload an image or PDF of your written answer for instant AI grading and feedback.</p>
+                <h2 className="text-xl font-bold text-foreground">Evaluate Your Answer</h2>
+                <p className="text-sm text-muted-foreground mt-1">Upload an image or PDF of your written answer for instant AI grading and feedback.</p>
             </div>
 
             <div className="space-y-6">
                 <div className="space-y-2">
-                    <label className="text-sm font-semibold text-slate-700">Question Reference</label>
+                    <label className="text-sm font-semibold text-foreground/85">Question Reference</label>
                     <Input
                         placeholder="e.g. Q3 from Thermodynamics Mock Test"
                         value={questionRef}
                         onChange={(e) => setQuestionRef(e.target.value)}
                         disabled={state !== 'idle' && state !== 'failed'}
-                        className="bg-slate-50 border-slate-200 focus-visible:ring-blue-500"
+                        className="bg-muted/35 border-border focus-visible:ring-[#3F6E6A]/30"
                     />
                 </div>
 
                 <div
-                    className={`relative flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-10 transition-colors ${dragActive && questionRef.trim() ? 'border-amber-500 bg-amber-50' : 'border-slate-300 bg-slate-50'}
+                    className={`relative flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-10 transition-colors ${dragActive && questionRef.trim() ? 'border-[#3F6E6A]/70 bg-[rgba(63,110,106,0.16)]' : 'border-border bg-muted/35'}
                     ${state === 'idle' && !questionRef.trim() ? 'opacity-60 cursor-not-allowed' : ''}
-                    ${(state === 'idle' || state === 'failed') && questionRef.trim() ? 'hover:bg-slate-100 cursor-pointer' : ''}`}
+                    ${(state === 'idle' || state === 'failed') && questionRef.trim() ? 'hover:bg-muted/55 cursor-pointer' : ''}`}
                     onDragEnter={handleDrag}
                     onDragLeave={handleDrag}
                     onDragOver={handleDrag}
@@ -101,13 +101,13 @@ export function EvaluationUploadCard({ state, progress, errorMessage, onSubmit }
 
                     {(state === 'idle' || state === 'failed') && (
                         <div className="text-center">
-                            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-white shadow-sm mb-4">
-                                <UploadCloud className="h-6 w-6 text-slate-500" />
+                            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-card shadow-sm mb-4">
+                                <UploadCloud className="h-6 w-6 text-muted-foreground" />
                             </div>
-                            <p className="text-sm font-medium text-slate-900">Click to upload or drag & drop</p>
-                            <p className="mt-1 text-xs text-slate-500">PDF, JPG, PNG up to 10MB</p>
+                            <p className="text-sm font-medium text-foreground">Click to upload or drag & drop</p>
+                            <p className="mt-1 text-xs text-muted-foreground">PDF, JPG, PNG up to 10MB</p>
                             {!questionRef.trim() && (
-                                <p className="mt-4 text-xs font-medium text-amber-600">Please enter a question reference first.</p>
+                                <p className="mt-4 text-xs font-medium text-[#95AAA7]">Please enter a question reference first.</p>
                             )}
                             {state === 'failed' && errorMessage ? (
                                 <p className="mt-4 text-xs font-medium text-red-600 flex items-center justify-center gap-1">
@@ -119,17 +119,17 @@ export function EvaluationUploadCard({ state, progress, errorMessage, onSubmit }
 
                     {state === 'uploading' && (
                         <div className="w-full max-w-sm text-center">
-                            <FileText className="mx-auto h-8 w-8 text-blue-500 mb-4 animate-pulse" />
-                            <p className="text-sm font-medium text-slate-900 mb-2">Uploading answer sheet...</p>
+                            <FileText className="mx-auto h-8 w-8 text-[#8EA7BA] mb-4 animate-pulse" />
+                            <p className="text-sm font-medium text-foreground mb-2">Uploading answer sheet...</p>
                             <Progress className="h-2 w-full" value={progress} />
                         </div>
                     )}
 
                     {state === 'evaluating' && (
                         <div className="text-center mt-2">
-                            <Loader2 className="mx-auto h-10 w-10 text-amber-500 animate-spin mb-4" />
-                            <p className="text-sm font-semibold text-slate-900">Our AI is evaluating your answer...</p>
-                            <p className="mt-1 text-xs text-slate-500">Checking against marking schemes and extracting text.</p>
+                            <Loader2 className="mx-auto h-10 w-10 text-[#89A09D] animate-spin mb-4" />
+                            <p className="text-sm font-semibold text-foreground">Our AI is evaluating your answer...</p>
+                            <p className="mt-1 text-xs text-muted-foreground">Checking against marking schemes and extracting text.</p>
                         </div>
                     )}
                 </div>

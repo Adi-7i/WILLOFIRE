@@ -13,15 +13,15 @@ interface McqCardProps {
 
 export function McqCard({ question, index, selectedOptionId, onSelect, isReviewMode = false }: McqCardProps) {
     return (
-        <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden flex flex-col relative">
-            <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-blue-500" />
+        <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden flex flex-col relative">
+            <div className="absolute left-0 top-0 bottom-0 w-1.5 bg-[rgba(46,74,98,0.22)]" />
 
             <div className="p-6 md:p-8 pl-8 md:pl-10">
                 <div className="flex gap-4">
-                    <span className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-slate-100 text-slate-600 font-semibold text-sm">
+                    <span className="flex-shrink-0 flex items-center justify-center w-8 h-8 rounded-full bg-muted/55 text-muted-foreground font-semibold text-sm">
                         {index + 1}
                     </span>
-                    <h3 className="text-lg font-medium text-slate-900 leading-snug pt-1">
+                    <h3 className="text-lg font-medium text-foreground leading-snug pt-1">
                         {question.question}
                     </h3>
                 </div>
@@ -36,16 +36,16 @@ export function McqCard({ question, index, selectedOptionId, onSelect, isReviewM
                             {question.options.map((option) => (
                                 <div
                                     key={option.id}
-                                    className={`flex items-center space-x-3 rounded-lg border p-4 transition-colors cursor-pointer hover:bg-slate-50 ${selectedOptionId === option.id
-                                            ? 'border-blue-500 bg-blue-50/50 hover:bg-blue-50'
-                                            : 'border-slate-200'
+                                    className={`flex items-center space-x-3 rounded-lg border p-4 transition-colors cursor-pointer hover:bg-muted/35 ${selectedOptionId === option.id
+                                            ? 'border-[#3F6E6A]/70 bg-[rgba(46,74,98,0.18)] hover:bg-[rgba(46,74,98,0.22)]'
+                                            : 'border-border'
                                         }`}
                                     onClick={() => onSelect?.(option.id)}
                                 >
                                     <RadioGroupItem value={option.id} id={`q${question.id}-${option.id}`} />
                                     <Label
                                         htmlFor={`q${question.id}-${option.id}`}
-                                        className="flex-1 cursor-pointer font-normal text-base text-slate-700 leading-normal"
+                                        className="flex-1 cursor-pointer font-normal text-base text-foreground/85 leading-normal"
                                     >
                                         {option.text}
                                     </Label>
@@ -58,14 +58,14 @@ export function McqCard({ question, index, selectedOptionId, onSelect, isReviewM
                                 const isSelected = selectedOptionId === option.id;
                                 const isCorrect = option.id === question.correctOptionId;
 
-                                let borderColor = 'border-slate-200';
-                                let bgColor = 'bg-white';
+                                let borderColor = 'border-border';
+                                let bgColor = 'bg-card';
                                 let Icon = null;
 
                                 if (isCorrect) {
-                                    borderColor = 'border-green-500';
-                                    bgColor = 'bg-green-50/50';
-                                    Icon = <Check className="h-5 w-5 text-green-500" />;
+                                    borderColor = 'border-[#3F6E6A]/70';
+                                    bgColor = 'bg-[rgba(63,110,106,0.12)]';
+                                    Icon = <Check className="h-5 w-5 text-[#84AC9F]" />;
                                 } else if (isSelected && !isCorrect) {
                                     borderColor = 'border-red-300';
                                     bgColor = 'bg-red-50/50';
@@ -77,10 +77,10 @@ export function McqCard({ question, index, selectedOptionId, onSelect, isReviewM
                                         key={option.id}
                                         className={`flex items-center space-x-3 rounded-lg border p-4 ${borderColor} ${bgColor}`}
                                     >
-                                        <div className="w-5 h-5 rounded-full border border-slate-300 flex items-center justify-center shrink-0">
-                                            {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-slate-400" />}
+                                        <div className="w-5 h-5 rounded-full border border-border flex items-center justify-center shrink-0">
+                                            {isSelected && <div className="w-2.5 h-2.5 rounded-full bg-muted-foreground/70" />}
                                         </div>
-                                        <span className="flex-1 font-normal text-base text-slate-700 leading-normal">
+                                        <span className="flex-1 font-normal text-base text-foreground/85 leading-normal">
                                             {option.text}
                                         </span>
                                         {Icon}
@@ -88,9 +88,9 @@ export function McqCard({ question, index, selectedOptionId, onSelect, isReviewM
                                 );
                             })}
 
-                            <div className="mt-6 p-4 rounded-lg bg-slate-50 border border-slate-200">
-                                <p className="text-sm font-semibold text-slate-900 mb-1">Explanation</p>
-                                <p className="text-sm text-slate-600 leading-relaxed">
+                            <div className="mt-6 p-4 rounded-lg bg-muted/35 border border-border">
+                                <p className="text-sm font-semibold text-foreground mb-1">Explanation</p>
+                                <p className="text-sm text-muted-foreground leading-relaxed">
                                     {question.explanation}
                                 </p>
                             </div>

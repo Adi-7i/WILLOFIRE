@@ -97,7 +97,7 @@ export default function AskPdfPage() {
     );
 
     return (
-        <div className={`${manrope.variable} h-[calc(100vh-2rem)] text-[#E5E7EB]`}>
+        <div className={`${manrope.variable} h-[calc(100vh-2rem)] text-foreground`}>
             <div className="relative grid h-full grid-cols-1 gap-6 lg:grid-cols-[320px_minmax(0,1fr)]">
                 <PdfControlPanel
                     readyPdfs={readyPdfs}
@@ -107,20 +107,20 @@ export default function AskPdfPage() {
                 />
 
                 <section className="relative flex min-h-0 flex-col">
-                    <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_6%,rgba(56,189,248,0.08),transparent_28%),radial-gradient(circle_at_84%_90%,rgba(37,99,235,0.07),transparent_32%)]" />
+                    <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_12%_6%,rgba(46,74,98,0.12),transparent_28%),radial-gradient(circle_at_84%_90%,rgba(63,110,106,0.1),transparent_32%)]" />
 
                     <div className="relative flex items-center justify-between py-2">
-                        <p className="text-xs uppercase tracking-[0.16em] text-[#9CA3AF]">Ask PDF Workspace</p>
-                        <p className="text-xs text-[#6B7280]">{workspaceLabel}</p>
+                        <p className="text-xs uppercase tracking-[0.16em] text-muted-foreground">Ask PDF Workspace</p>
+                        <p className="text-xs text-muted-foreground/80">{workspaceLabel}</p>
                     </div>
 
                     {!hasMessages ? (
                         <div className="relative flex flex-1 flex-col items-center justify-center px-4">
                             <div className="mb-8 text-center">
-                                <h1 className="text-3xl font-semibold tracking-tight text-[#E5E7EB]">
+                                <h1 className="text-3xl font-semibold tracking-tight text-foreground">
                                     Ask anything from your material
                                 </h1>
-                                <p className="mt-3 text-sm text-[#9CA3AF]">
+                                <p className="mt-3 text-sm text-muted-foreground">
                                     Frame a direct exam question and get focused answers with citations.
                                 </p>
                             </div>
@@ -141,7 +141,7 @@ export default function AskPdfPage() {
                                 <ChatMessageList messages={messages} thinkingStage={thinkingStage} />
                                 <div ref={responseAnchorRef} />
                             </div>
-                            <div className="sticky bottom-0 relative border-t border-[#1F2937] bg-gradient-to-t from-[#0B1120] via-[#0B1120]/95 to-transparent px-2 pb-2 pt-4">
+                            <div className="sticky bottom-0 relative border-t border-border bg-gradient-to-t from-background via-background/95 to-transparent px-2 pb-2 pt-4">
                                 <ChatInputBar
                                     value={draft}
                                     onChange={setDraft}

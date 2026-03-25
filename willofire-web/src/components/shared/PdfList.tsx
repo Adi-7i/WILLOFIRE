@@ -20,10 +20,10 @@ import {
 import { PdfListItem } from '@/lib/api/types';
 
 const statusConfig = {
-    uploaded: { label: 'Uploaded', className: 'bg-blue-50 text-blue-700 hover:bg-blue-100' },
-    processing: { label: 'Processing', className: 'bg-amber-50 text-amber-700 hover:bg-amber-100' },
-    ready: { label: 'Ready', className: 'bg-green-50 text-green-700 hover:bg-green-100' },
-    failed: { label: 'Failed', className: 'bg-red-50 text-red-700 hover:bg-red-100' },
+    uploaded: { label: 'Uploaded', className: 'bg-[rgba(46,74,98,0.22)] text-[#A7BDC8] hover:bg-[rgba(46,74,98,0.28)]' },
+    processing: { label: 'Processing', className: 'bg-[rgba(63,110,106,0.16)] text-[#A8B9B6] hover:bg-[rgba(63,110,106,0.22)]' },
+    ready: { label: 'Ready', className: 'bg-[rgba(63,110,106,0.16)] text-[#A3C0B7] hover:bg-[rgba(63,110,106,0.24)]' },
+    failed: { label: 'Failed', className: 'bg-red-900/20 text-red-300 hover:bg-red-900/30' },
 };
 
 interface PdfListProps {
@@ -46,15 +46,15 @@ const formatDate = (value: string) =>
 
 export function PdfList({ pdfs, isLoading, isError }: PdfListProps) {
     return (
-        <div className="rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-            <div className="flex items-center justify-between border-b border-slate-200 bg-white px-6 py-4">
-                <h3 className="text-base font-semibold text-slate-900">Your Uploaded PDFs</h3>
+        <div className="rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+            <div className="flex items-center justify-between border-b border-border bg-card px-6 py-4">
+                <h3 className="text-base font-semibold text-foreground">Your Uploaded PDFs</h3>
             </div>
 
             <div className="overflow-x-auto">
                 <Table>
                     <TableHeader>
-                        <TableRow className="hover:bg-transparent bg-slate-50/50">
+                        <TableRow className="hover:bg-transparent bg-muted/35">
                             <TableHead className="w-[400px]">File Name</TableHead>
                             <TableHead>Size</TableHead>
                             <TableHead>Uploaded At</TableHead>
@@ -65,7 +65,7 @@ export function PdfList({ pdfs, isLoading, isError }: PdfListProps) {
                     <TableBody>
                         {isLoading ? (
                             <TableRow>
-                                <TableCell colSpan={5} className="h-24 text-center text-slate-500">
+                                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
                                     Loading PDFs...
                                 </TableCell>
                             </TableRow>
@@ -77,23 +77,23 @@ export function PdfList({ pdfs, isLoading, isError }: PdfListProps) {
                             </TableRow>
                         ) : pdfs.length === 0 ? (
                             <TableRow>
-                                <TableCell colSpan={5} className="h-24 text-center text-slate-500">
+                                <TableCell colSpan={5} className="h-24 text-center text-muted-foreground">
                                     No PDFs uploaded yet.
                                 </TableCell>
                             </TableRow>
                         ) : (
                             pdfs.map((pdf) => (
                                 <TableRow key={pdf.id}>
-                                    <TableCell className="font-medium text-slate-900">
+                                    <TableCell className="font-medium text-foreground">
                                         <div className="flex items-center gap-3">
-                                            <div className="rounded p-2 bg-blue-50 text-blue-600">
+                                            <div className="rounded p-2 bg-[rgba(46,74,98,0.22)] text-[#93ADBF]">
                                                 <FileText className="h-4 w-4" />
                                             </div>
                                             <span className="truncate max-w-[250px] sm:max-w-xs">{pdf.originalName}</span>
                                         </div>
                                     </TableCell>
-                                    <TableCell className="text-slate-500">{formatFileSize(pdf.fileSizeBytes)}</TableCell>
-                                    <TableCell className="text-slate-500">{formatDate(pdf.createdAt)}</TableCell>
+                                    <TableCell className="text-muted-foreground">{formatFileSize(pdf.fileSizeBytes)}</TableCell>
+                                    <TableCell className="text-muted-foreground">{formatDate(pdf.createdAt)}</TableCell>
                                     <TableCell>
                                         <Badge variant="secondary" className={`${statusConfig[pdf.status].className} font-medium border-0`}>
                                             {statusConfig[pdf.status].label}

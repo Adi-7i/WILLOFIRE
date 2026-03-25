@@ -24,7 +24,7 @@ function highlightTerms(text: string) {
         const isTerm = keyTerms.some((term) => term.toLowerCase() === chunk.toLowerCase());
         if (!isTerm) return <span key={`${chunk}-${idx}`}>{chunk}</span>;
         return (
-            <span key={`${chunk}-${idx}`} className="rounded bg-[#1E3A8A]/35 px-1 text-[#BFDBFE]">
+            <span key={`${chunk}-${idx}`} className="rounded bg-[rgba(46,74,98,0.28)] px-1 text-[#B6C8D5]">
                 {chunk}
             </span>
         );
@@ -37,9 +37,9 @@ export function ChatMessageList({ messages, thinkingStage }: ChatMessageListProp
             {messages.map((message) => (
                 <div key={message.id} className="animate-in fade-in slide-in-from-bottom-2 duration-300">
                     {message.role === 'user' ? (
-                        <p className="text-sm text-[#9CA3AF]">{message.text}</p>
+                        <p className="text-sm text-muted-foreground">{message.text}</p>
                     ) : (
-                        <div className="space-y-4 text-[15px] leading-8 text-[#D1D5DB]">
+                        <div className="space-y-4 text-[15px] leading-8 text-foreground/90">
                             {message.text
                                 .split(/\n{2,}/)
                                 .filter(Boolean)
@@ -51,7 +51,7 @@ export function ChatMessageList({ messages, thinkingStage }: ChatMessageListProp
                                     {message.sources.map((page, idx) => (
                                         <span
                                             key={`${message.id}-source-${page}-${idx}`}
-                                            className="rounded-full border border-[#1F2937] bg-[#0F172A]/70 px-3 py-1 text-xs text-[#9CA3AF] transition-colors hover:border-[#38BDF8]/45 hover:text-[#E5E7EB]"
+                                            className="rounded-full border border-border bg-card/70 px-3 py-1 text-xs text-muted-foreground transition-colors hover:border-[#3F6E6A]/55 hover:text-foreground"
                                         >
                                             Page {page}
                                         </span>
@@ -64,12 +64,12 @@ export function ChatMessageList({ messages, thinkingStage }: ChatMessageListProp
             ))}
 
             {thinkingStage && (
-                <div className="flex items-center gap-2 text-sm text-[#9CA3AF]">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
                     <span>{thinkingStage}</span>
                     <span className="inline-flex gap-1">
-                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#38BDF8] [animation-delay:0ms]" />
-                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#38BDF8] [animation-delay:120ms]" />
-                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#38BDF8] [animation-delay:240ms]" />
+                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary [animation-delay:0ms]" />
+                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary [animation-delay:120ms]" />
+                        <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-primary [animation-delay:240ms]" />
                     </span>
                 </div>
             )}

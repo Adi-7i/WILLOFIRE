@@ -29,12 +29,12 @@ export function ChatInputBar({
 
     return (
         <div className={centered ? 'mx-auto w-full max-w-4xl' : 'w-full'}>
-            <div className="rounded-[24px] border border-[#1F2937] bg-[#0F172A]/55 p-3 backdrop-blur-md transition-all duration-300 focus-within:border-[#2563EB] focus-within:shadow-[0_0_0_1px_rgba(37,99,235,0.45)]">
+            <div className="rounded-[24px] border border-border bg-card/55 p-3 backdrop-blur-md transition-all duration-300 focus-within:border-primary wf-soft-glow-focus">
                 <Textarea
                     value={value}
                     onChange={(event) => onChange(event.target.value)}
                     placeholder="Ask anything from your material..."
-                    className="min-h-[96px] resize-none border-0 bg-transparent px-2 py-1 text-[15px] leading-7 text-[#E5E7EB] shadow-none placeholder:text-[#6B7280] focus-visible:ring-0"
+                    className="min-h-[96px] resize-none border-0 bg-transparent px-2 py-1 text-[15px] leading-7 text-foreground shadow-none placeholder:text-muted-foreground/80 focus-visible:ring-0"
                     onKeyDown={(event) => {
                         if (event.key === 'Enter' && !event.shiftKey) {
                             event.preventDefault();
@@ -44,11 +44,11 @@ export function ChatInputBar({
                     disabled={disabled}
                 />
 
-                <div className="mt-2 flex items-center justify-between gap-3 border-t border-[#1F2937] pt-3">
+                <div className="mt-2 flex items-center justify-between gap-3 border-t border-border pt-3">
                     <select
                         value={selectedModel}
                         onChange={(event) => onSelectedModelChange(event.target.value)}
-                        className="h-9 min-w-[160px] appearance-none rounded-lg border border-[#1F2937] bg-[#0B1120]/80 px-3 text-sm text-[#D1D5DB] outline-none transition-all duration-300 hover:border-[#334155] focus:border-[#2563EB] focus:ring-2 focus:ring-[#2563EB]/30"
+                        className="h-9 min-w-[160px] appearance-none rounded-lg border border-border bg-background/80 px-3 text-sm text-foreground/90 outline-none transition-all duration-300 hover:border-[#3F6E6A]/45 focus:border-primary focus:ring-2 focus:ring-[#3F6E6A]/25"
                     >
                         <option value="exam-assistant-v1">Exam Assistant v1</option>
                         <option value="exam-assistant-pro">Exam Assistant Pro</option>
@@ -58,7 +58,7 @@ export function ChatInputBar({
                         type="button"
                         onClick={onSubmit}
                         disabled={!canSubmit}
-                        className="h-9 rounded-lg bg-[#2563EB] px-4 text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-[#1D4ED8] disabled:opacity-50"
+                        className="h-9 rounded-lg wf-accent-gradient px-4 text-primary-foreground transition-all duration-300 hover:-translate-y-0.5 wf-soft-glow-hover disabled:opacity-50"
                     >
                         <SendHorizonal className="h-4 w-4" />
                         {isLoading ? 'Working...' : 'Send'}

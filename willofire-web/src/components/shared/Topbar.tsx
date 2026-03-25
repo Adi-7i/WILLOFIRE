@@ -33,22 +33,22 @@ export function Topbar({ onOpenSidebar }: TopbarProps) {
     const logout = useLogout();
 
     return (
-        <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-x-4 border-b border-[#1F2937] bg-[#0B1120]/85 px-4 backdrop-blur-lg sm:gap-x-6 sm:px-6 lg:px-8">
+        <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center gap-x-4 border-b border-border bg-card/85 px-4 backdrop-blur-lg sm:gap-x-6 sm:px-6 lg:px-8">
             <Button
                 variant="ghost"
                 size="icon"
-                className="-m-2.5 p-2.5 text-[#9CA3AF] hover:bg-[#111827] hover:text-[#E5E7EB] md:hidden"
+                className="-m-2.5 p-2.5 text-muted-foreground hover:bg-accent/35 hover:text-foreground md:hidden"
                 onClick={onOpenSidebar}
             >
                 <span className="sr-only">Open sidebar</span>
                 <Menu className="h-6 w-6" aria-hidden="true" />
             </Button>
 
-            <div className="h-6 w-px bg-[#1F2937] md:hidden" aria-hidden="true" />
+            <div className="h-6 w-px bg-border md:hidden" aria-hidden="true" />
 
             <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
                 <div className="flex flex-1 items-center">
-                    <h1 className="text-xl font-semibold leading-6 text-[#E5E7EB]">
+                    <h1 className="text-xl font-semibold leading-6 text-foreground">
                         {getPageTitle(pathname)}
                     </h1>
                 </div>
@@ -57,7 +57,7 @@ export function Topbar({ onOpenSidebar }: TopbarProps) {
                         <DropdownMenuTrigger asChild>
                             <Button variant="ghost" className="relative h-8 w-8 rounded-full">
                                 <Avatar className="h-8 w-8">
-                                    <AvatarFallback className="bg-[#111827] text-[#BFDBFE] font-medium border border-[#1F2937]">WF</AvatarFallback>
+                                    <AvatarFallback className="bg-accent/35 text-primary font-medium border border-border">WF</AvatarFallback>
                                 </Avatar>
                             </Button>
                         </DropdownMenuTrigger>
@@ -77,7 +77,7 @@ export function Topbar({ onOpenSidebar }: TopbarProps) {
                             </DropdownMenuItem>
                             <DropdownMenuItem
                                 onClick={() => logout.mutate()}
-                                className="text-red-600 focus:bg-red-50 focus:text-red-600"
+                                className="text-red-400 focus:bg-red-900/20 focus:text-red-300"
                             >
                                 <LogOut className="mr-2 h-4 w-4" />
                                 <span>{logout.isPending ? 'Logging out...' : 'Log out'}</span>

@@ -39,16 +39,16 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             {/* Mobile sidebar */}
             <aside
                 className={cn(
-                    'fixed inset-y-4 left-4 z-50 w-64 rounded-2xl border border-[#1F2937] bg-[#0B1120]/95 p-3 text-[#9CA3AF] shadow-[0_20px_45px_rgba(0,0,0,0.45)] backdrop-blur-xl transition-transform duration-300 ease-out md:hidden',
+                    'fixed inset-y-4 left-4 z-50 w-64 rounded-2xl border border-border bg-card/95 p-3 text-muted-foreground shadow-[0_20px_45px_rgba(0,0,0,0.45)] backdrop-blur-xl transition-transform duration-300 ease-out md:hidden',
                     isOpen ? 'translate-x-0' : '-translate-x-[120%]'
                 )}
             >
                 <div className="mb-3 flex items-center justify-between px-2">
-                    <Link href="/dashboard" className="flex items-center gap-2 text-sm font-semibold text-[#E5E7EB]">
-                        <Flame className="h-5 w-5 text-[#38BDF8]" />
+                    <Link href="/dashboard" className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                        <Flame className="h-5 w-5 text-primary" />
                         Willofire
                     </Link>
-                    <Button variant="ghost" size="icon" className="text-[#9CA3AF] hover:bg-[#0F172A] hover:text-[#E5E7EB]" onClick={onClose}>
+                    <Button variant="ghost" size="icon" className="text-muted-foreground hover:bg-accent/40 hover:text-foreground" onClick={onClose}>
                         <X className="h-5 w-5" />
                         <span className="sr-only">Close sidebar</span>
                     </Button>
@@ -65,13 +65,13 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                                 className={cn(
                                     'group flex items-center rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
                                     isActive
-                                        ? 'bg-[#111827] text-[#E5E7EB]'
-                                        : 'text-[#9CA3AF] hover:bg-[#111827]/70 hover:text-[#E5E7EB]'
+                                        ? 'bg-accent/40 text-foreground'
+                                        : 'text-muted-foreground hover:bg-accent/35 hover:text-foreground'
                                 )}
                                 onClick={onClose}
                             >
                                 <Icon
-                                    className={cn('mr-3 h-5 w-5 shrink-0', isActive ? 'text-[#38BDF8]' : 'text-[#9CA3AF]')}
+                                    className={cn('mr-3 h-5 w-5 shrink-0', isActive ? 'text-primary' : 'text-muted-foreground')}
                                     aria-hidden="true"
                                 />
                                 {item.name}
@@ -84,8 +84,8 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             {/* Desktop floating rail */}
             <aside
                 className={cn(
-                    'fixed left-4 top-4 bottom-4 z-40 hidden rounded-[28px] border border-[#1F2937] bg-[#0B1120]/72 px-2 py-3 text-[#9CA3AF] shadow-[0_16px_40px_rgba(0,0,0,0.4)] backdrop-blur-xl transition-[width,background-color] duration-300 ease-out md:flex md:flex-col',
-                    isExpanded ? 'w-56 bg-[#0B1120]/84' : 'w-[72px]'
+                    'fixed left-4 top-4 bottom-4 z-40 hidden rounded-[28px] border border-border bg-card/72 px-2 py-3 text-muted-foreground shadow-[0_16px_40px_rgba(0,0,0,0.4)] backdrop-blur-xl transition-[width,background-color] duration-300 ease-out md:flex md:flex-col',
+                    isExpanded ? 'w-56 bg-card/84' : 'w-[72px]'
                 )}
                 onMouseEnter={() => setIsHovered(true)}
                 onMouseLeave={() => setIsHovered(false)}
@@ -97,10 +97,10 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                         isExpanded ? 'gap-3 px-3 justify-start' : 'justify-center'
                     )}
                 >
-                    <Flame className="h-5 w-5 shrink-0 text-[#38BDF8]" />
+                    <Flame className="h-5 w-5 shrink-0 text-primary" />
                     <span
                         className={cn(
-                            'overflow-hidden whitespace-nowrap text-sm font-semibold text-[#E5E7EB] transition-all duration-300',
+                            'overflow-hidden whitespace-nowrap text-sm font-semibold text-foreground transition-all duration-300',
                             isExpanded ? 'max-w-[140px] opacity-100 translate-x-0' : 'max-w-0 opacity-0 -translate-x-1'
                         )}
                     >
@@ -121,14 +121,14 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                                     'group relative flex h-11 items-center rounded-2xl transition-all duration-300',
                                     isExpanded ? 'justify-start gap-3 px-3' : 'justify-center',
                                     isActive
-                                        ? 'bg-[#111827] text-[#E5E7EB]'
-                                        : 'text-[#9CA3AF] hover:bg-[#111827]/70 hover:text-[#E5E7EB]'
+                                        ? 'bg-accent/40 text-foreground'
+                                        : 'text-muted-foreground hover:bg-accent/35 hover:text-foreground'
                                 )}
                             >
                                 {isActive && (
-                                    <span className="absolute inset-0 rounded-2xl shadow-[0_0_0_1px_rgba(56,189,248,0.35),0_0_28px_rgba(37,99,235,0.18)]" />
+                                    <span className="absolute inset-0 rounded-2xl shadow-[0_0_0_1px_rgba(63,110,106,0.2),0_0_28px_rgba(63,110,106,0.2)]" />
                                 )}
-                                <Icon className={cn('relative z-10 h-5 w-5 shrink-0', isActive && 'text-[#38BDF8]')} />
+                                <Icon className={cn('relative z-10 h-5 w-5 shrink-0', isActive && 'text-primary')} />
                                 <span
                                     className={cn(
                                         'relative z-10 overflow-hidden whitespace-nowrap text-sm transition-all duration-300',

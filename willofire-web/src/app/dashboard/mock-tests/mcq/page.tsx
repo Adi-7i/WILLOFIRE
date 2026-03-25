@@ -113,12 +113,12 @@ export default function MockTestsPage() {
     if (testState === 'testing' && activeTest) {
         return (
             <div className="max-w-4xl mx-auto pb-32 animate-in fade-in duration-500">
-                <div className="mb-8 flex items-center justify-between bg-white p-4 rounded-xl border border-slate-200 shadow-sm sticky top-20 z-10">
+                <div className="mb-8 flex items-center justify-between bg-card p-4 rounded-xl border border-border shadow-sm sticky top-20 z-10">
                     <div>
-                        <h2 className="text-lg font-bold text-slate-900">{activeTest.title}</h2>
-                        <p className="text-sm text-slate-500">Answer all {questions.length} questions to submit</p>
+                        <h2 className="text-lg font-bold text-foreground">{activeTest.title}</h2>
+                        <p className="text-sm text-muted-foreground">Answer all {questions.length} questions to submit</p>
                     </div>
-                    <Badge variant="secondary" className="bg-amber-50 text-amber-700 hover:bg-amber-100 border-0">
+                    <Badge variant="secondary" className="bg-[rgba(63,110,106,0.16)] text-[#A8B9B6] hover:bg-[rgba(63,110,106,0.22)] border-0">
                         {Object.keys(answers).length} / {questions.length} Answered
                     </Badge>
                 </div>
@@ -135,12 +135,12 @@ export default function MockTestsPage() {
                     ))}
                 </div>
 
-                <div className="fixed bottom-0 left-0 right-0 md:left-64 bg-white border-t border-slate-200 p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-20">
+                <div className="fixed bottom-0 left-0 right-0 md:left-64 bg-card border-t border-border p-4 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] z-20">
                     <div className="max-w-4xl mx-auto flex items-center justify-between">
-                        <div className="text-sm font-medium text-slate-600">
+                        <div className="text-sm font-medium text-muted-foreground">
                             {isTestComplete ? (
-                                <span className="text-green-600 flex items-center gap-2">
-                                    <span className="w-2 h-2 rounded-full bg-green-500" />
+                                <span className="text-[#93B6AC] flex items-center gap-2">
+                                    <span className="w-2 h-2 rounded-full bg-[rgba(63,110,106,0.16)]0" />
                                     All questions answered
                                 </span>
                             ) : (
@@ -150,7 +150,7 @@ export default function MockTestsPage() {
                         <Button
                             onClick={() => void handleSubmit()}
                             disabled={!isTestComplete || submitMutation.isPending}
-                            className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-8 h-11"
+                            className="wf-accent-gradient text-primary-foreground font-medium px-8 h-11 wf-soft-glow-hover"
                         >
                             {submitMutation.isPending ? 'Submitting...' : 'Submit Test'}
                         </Button>
@@ -163,13 +163,13 @@ export default function MockTestsPage() {
     return (
         <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div>
-                <h1 className="text-3xl font-bold tracking-tight text-slate-900">Mock Tests</h1>
-                <p className="text-slate-500 mt-2">Practice with AI-generated tests from your study materials.</p>
+                <h1 className="text-3xl font-bold tracking-tight text-foreground">Mock Tests</h1>
+                <p className="text-muted-foreground mt-2">Practice with AI-generated tests from your study materials.</p>
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm flex flex-col gap-4 md:flex-row md:items-end">
+            <div className="rounded-xl border border-border bg-card p-6 shadow-sm flex flex-col gap-4 md:flex-row md:items-end">
                 <div className="flex-1">
-                    <p className="text-sm font-medium text-slate-700 mb-2">Generate new test from PDF</p>
+                    <p className="text-sm font-medium text-foreground/85 mb-2">Generate new test from PDF</p>
                     <Select value={selectedPdfId} onValueChange={setSelectedPdfId}>
                         <SelectTrigger>
                             <SelectValue placeholder="Select a ready PDF" />
@@ -186,7 +186,7 @@ export default function MockTestsPage() {
                 <Button
                     onClick={() => void handleGenerate()}
                     disabled={!selectedPdfId || generateMutation.isPending}
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                    className="wf-accent-gradient text-primary-foreground wf-soft-glow-hover"
                 >
                     {generateMutation.isPending ? 'Queuing...' : 'Generate Test'}
                 </Button>
@@ -194,12 +194,12 @@ export default function MockTestsPage() {
 
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {tests.length === 0 ? (
-                    <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 flex flex-col items-center justify-center p-8 text-center min-h-[300px]">
-                        <div className="w-12 h-12 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mb-4">
+                    <div className="rounded-xl border border-dashed border-border bg-muted/35 flex flex-col items-center justify-center p-8 text-center min-h-[300px]">
+                        <div className="w-12 h-12 bg-muted/55 text-muted-foreground/80 rounded-full flex items-center justify-center mb-4">
                             <BookOpen className="h-6 w-6" />
                         </div>
-                        <h3 className="text-base font-semibold text-slate-900">No tests generated yet</h3>
-                        <p className="text-sm text-slate-500 mt-2 max-w-[250px]">
+                        <h3 className="text-base font-semibold text-foreground">No tests generated yet</h3>
+                        <p className="text-sm text-muted-foreground mt-2 max-w-[250px]">
                             Upload a PDF, then generate your first AI mock test.
                         </p>
                     </div>
@@ -207,20 +207,20 @@ export default function MockTestsPage() {
                     tests.map((test) => (
                         <div
                             key={test.id}
-                            className="rounded-xl border border-blue-200 bg-white shadow-sm overflow-hidden flex flex-col relative group hover:border-blue-300 transition-colors"
+                            className="rounded-xl border border-[#2E4A62]/55 bg-card shadow-sm overflow-hidden flex flex-col relative group hover:border-[#3F6E6A]/50 transition-colors wf-soft-glow-hover"
                         >
                             <div className="absolute top-0 right-0 p-4">
-                                <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-200 border-0 font-medium shadow-none">Ready</Badge>
+                                <Badge className="bg-[rgba(46,74,98,0.28)] text-[#A7BDC8] hover:bg-[rgba(46,74,98,0.36)] border-0 font-medium shadow-none">Ready</Badge>
                             </div>
 
                             <div className="p-6 flex-1">
-                                <div className="w-12 h-12 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center mb-4">
+                                <div className="w-12 h-12 bg-[rgba(46,74,98,0.22)] text-[#93ADBF] rounded-xl flex items-center justify-center mb-4">
                                     <BookOpen className="h-6 w-6" />
                                 </div>
 
-                                <h3 className="text-lg font-bold text-slate-900 mb-2">{test.title}</h3>
+                                <h3 className="text-lg font-bold text-foreground mb-2">{test.title}</h3>
 
-                                <div className="flex flex-wrap gap-y-2 gap-x-4 text-sm text-slate-500 mb-6">
+                                <div className="flex flex-wrap gap-y-2 gap-x-4 text-sm text-muted-foreground mb-6">
                                     <span className="flex items-center gap-1.5">
                                         <FileText className="h-4 w-4" /> {test.totalQuestions} Questions
                                     </span>
@@ -231,7 +231,7 @@ export default function MockTestsPage() {
                             </div>
 
                             <div className="p-6 pt-0 mt-auto">
-                                <Button onClick={() => handleStart(test.id)} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium">
+                                <Button onClick={() => handleStart(test.id)} className="w-full wf-accent-gradient text-primary-foreground font-medium wf-soft-glow-hover">
                                     Start Test
                                 </Button>
                             </div>

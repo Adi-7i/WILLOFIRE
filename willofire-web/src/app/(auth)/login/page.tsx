@@ -28,11 +28,11 @@ export default function LoginPage() {
     };
 
     return (
-        <main className="flex min-h-screen items-center justify-center p-6 text-zinc-50">
-            <Card className="w-full max-w-sm rounded-xl border-zinc-800 bg-zinc-900 shadow-xl">
+        <main className="flex min-h-screen items-center justify-center p-6 text-foreground">
+            <Card className="w-full max-w-sm rounded-xl border-border bg-card shadow-xl">
                 <CardHeader className="space-y-1 text-center">
                     <CardTitle className="text-2xl font-semibold tracking-tight">Welcome back</CardTitle>
-                    <CardDescription className="text-zinc-400">Log in to your Willofire account</CardDescription>
+                    <CardDescription className="text-muted-foreground">Log in to your Willofire account</CardDescription>
                 </CardHeader>
                 <CardContent>
                     <Form {...form}>
@@ -42,7 +42,7 @@ export default function LoginPage() {
                                 name="email"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel className="text-zinc-200">Email</FormLabel>
+                                        <FormLabel className="text-foreground/90">Email</FormLabel>
                                         <FormControl>
                                             <Input
                                                 placeholder="name@example.com"
@@ -50,7 +50,7 @@ export default function LoginPage() {
                                                 autoCapitalize="none"
                                                 autoComplete="email"
                                                 autoCorrect="off"
-                                                className="bg-zinc-950 border-zinc-800 focus-visible:ring-orange-500"
+                                                className="bg-background border-border focus-visible:ring-[#3F6E6A]/30"
                                                 {...field}
                                             />
                                         </FormControl>
@@ -63,13 +63,13 @@ export default function LoginPage() {
                                 name="password"
                                 render={({ field }) => (
                                     <FormItem>
-                                        <FormLabel className="text-zinc-200">Password</FormLabel>
+                                        <FormLabel className="text-foreground/90">Password</FormLabel>
                                         <FormControl>
                                             <Input
                                                 type="password"
                                                 placeholder="••••••••"
                                                 autoComplete="current-password"
-                                                className="bg-zinc-950 border-zinc-800 focus-visible:ring-orange-500"
+                                                className="bg-background border-border focus-visible:ring-[#3F6E6A]/30"
                                                 {...field}
                                             />
                                         </FormControl>
@@ -82,7 +82,7 @@ export default function LoginPage() {
 
                             <Button
                                 type="submit"
-                                className="w-full mt-2 bg-orange-500 hover:bg-orange-600 text-white font-medium"
+                                className="w-full mt-2 wf-accent-gradient text-primary-foreground font-medium wf-soft-glow-hover"
                                 disabled={isPending}
                             >
                                 {isPending ? 'Logging in...' : 'Log in'}
@@ -90,10 +90,10 @@ export default function LoginPage() {
                         </form>
                     </Form>
                 </CardContent>
-                <CardFooter className="flex justify-center text-sm text-zinc-400">
+                <CardFooter className="flex justify-center text-sm text-muted-foreground">
                     <p>
                         Don&apos;t have an account?{' '}
-                        <Link href="/signup" className="text-orange-500 hover:text-orange-400 transition-colors font-medium">
+                        <Link href="/signup" className="text-primary hover:text-[#6C918D] transition-colors font-medium">
                             Sign up
                         </Link>
                     </p>

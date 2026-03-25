@@ -31,19 +31,19 @@ export function QuestionPanel({ onAsk, isLoading, readyPdfs }: QuestionPanelProp
     };
 
     return (
-        <div className="flex flex-col h-full rounded-xl border border-slate-200 bg-white shadow-sm overflow-hidden">
-            <div className="border-b border-slate-200 bg-slate-50 px-6 py-4">
-                <h2 className="text-base font-semibold text-slate-900 flex items-center gap-2">
-                    <Sparkles className="h-5 w-5 text-amber-500" />
+        <div className="flex flex-col h-full rounded-xl border border-border bg-card shadow-sm overflow-hidden">
+            <div className="border-b border-border bg-muted/35 px-6 py-4">
+                <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-[#89A09D]" />
                     Ask your PDF
                 </h2>
             </div>
 
             <form onSubmit={handleSubmit} className="flex flex-col flex-1 p-6 space-y-6">
                 <div className="space-y-2">
-                    <label className="text-sm font-medium text-slate-700">Select Document</label>
+                    <label className="text-sm font-medium text-foreground/85">Select Document</label>
                     <Select value={selectedPdf} onValueChange={setSelectedPdf}>
-                        <SelectTrigger className="w-full bg-slate-50 border-slate-200">
+                        <SelectTrigger className="w-full bg-muted/35 border-border">
                             <SelectValue placeholder="Choose a PDF to ask questions about..." />
                         </SelectTrigger>
                         <SelectContent>
@@ -57,12 +57,12 @@ export function QuestionPanel({ onAsk, isLoading, readyPdfs }: QuestionPanelProp
                 </div>
 
                 <div className="flex-1 flex flex-col space-y-2">
-                    <label className="text-sm font-medium text-slate-700">Your Question</label>
+                    <label className="text-sm font-medium text-foreground/85">Your Question</label>
                     <Textarea
                         value={question}
                         onChange={(e) => setQuestion(e.target.value)}
                         placeholder="E.g., What are the main principles of thermodynamics mentioned in chapter 4?"
-                        className="flex-1 resize-none bg-slate-50 border-slate-200 p-4 focus-visible:ring-blue-500"
+                        className="flex-1 resize-none bg-muted/35 border-border p-4 focus-visible:ring-[#3F6E6A]/30"
                         disabled={isLoading}
                     />
                 </div>
@@ -70,7 +70,7 @@ export function QuestionPanel({ onAsk, isLoading, readyPdfs }: QuestionPanelProp
                 <Button
                     type="submit"
                     disabled={!question.trim() || !selectedPdf || isLoading || readyPdfs.length === 0}
-                    className="w-full h-12 bg-blue-600 hover:bg-blue-700 text-white font-medium"
+                    className="w-full h-12 wf-accent-gradient text-primary-foreground font-medium wf-soft-glow-hover"
                 >
                     {isLoading ? (
                         <span className="flex items-center gap-2">

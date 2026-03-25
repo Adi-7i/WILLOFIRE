@@ -20,7 +20,7 @@ export default function DashboardLayout({
     const isAskPdfPage = pathname === '/dashboard/ask-pdf';
 
     return (
-        <div className="min-h-screen bg-[#0B1120] text-[#E5E7EB]">
+        <div className="min-h-screen bg-background text-foreground">
             <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
             <div className="flex min-h-screen flex-1 flex-col md:pl-24">
