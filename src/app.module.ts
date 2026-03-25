@@ -23,6 +23,7 @@ import {
   appConfig,
   dbConfig,
   redisConfig,
+  queueConfig,
   jwtConfig,
   aiConfig,
   storageConfig,
@@ -43,7 +44,7 @@ import {
       isGlobal: true,
       envFilePath: ['.env'],
       expandVariables: true,
-      load: [appConfig, dbConfig, redisConfig, jwtConfig, aiConfig, storageConfig],
+      load: [appConfig, dbConfig, redisConfig, queueConfig, jwtConfig, aiConfig, storageConfig],
     }),
 
     // ── Infrastructure ─────────────────────────────────────────────────────

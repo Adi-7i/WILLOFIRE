@@ -1,4 +1,5 @@
 import { Controller, Get, Inject } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectConnection } from '@nestjs/mongoose';
 import { Connection } from 'mongoose';
 import Redis from 'ioredis';
@@ -9,6 +10,7 @@ import { Public } from '../../common/decorators/public.decorator';
 @Controller('health')
 export class HealthController {
     constructor(
+        private readonly config: ConfigService,
         @InjectConnection() private readonly mongooseConnection: Connection,
         @Inject(REDIS_CLIENT) private readonly redisClient: Redis,
     ) { }
@@ -17,19 +19,24 @@ export class HealthController {
     async checkHealth() {
         // Mongoose readyState: 0 = disconnected, 1 = connected, 2 = connecting, 3 = disconnecting
         const dbStatus = this.mongooseConnection.readyState === 1 ? 'connected' : 'disconnected';
+        const redisEnabled = this.config.get<boolean>('redis.enabled') ?? true;
 
         // Check Redis natively
-        let redisStatus = 'disconnected';
-        try {
-            const pingResult = await this.redisClient.ping();
-            if (pingResult === 'PONG') {
-                redisStatus = 'connected';
+        let redisStatus = redisEnabled ? 'disconnected' : 'disabled';
+        if (redisEnabled) {
+            try {
+                const pingResult = await this.redisClient.ping();
+                if (pingResult === 'PONG') {
+                    redisStatus = 'connected';
+                }
+            } catch (error) {
+                // Redis error suppresses cleanly
             }
-        } catch (error) {
-            // Redis error suppresses cleanly 
         }
 
-        const isOk = dbStatus === 'connected' && redisStatus === 'connected';
+        const isOk = redisEnabled
+            ? dbStatus === 'connected' && redisStatus === 'connected'
+            : dbStatus === 'connected';
 
         return {
             status: isOk ? 'ok' : 'degraded',

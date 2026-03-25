@@ -1,4 +1,5 @@
 import { Injectable, Inject, Logger, OnModuleInit, OnApplicationShutdown } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Worker, Job } from 'bullmq';
 import Redis from 'ioredis';
 
@@ -28,6 +29,7 @@ export class EvaluationWorker implements OnModuleInit, OnApplicationShutdown {
     private worker!: Worker<EvaluationPayload, string, string>;
 
     constructor(
+        private readonly config: ConfigService,
         @Inject(REDIS_CLIENT) private readonly redis: Redis,
         private readonly aiService: AiService,
         private readonly answerSubmissionRepository: AnswerSubmissionRepository,
@@ -36,6 +38,12 @@ export class EvaluationWorker implements OnModuleInit, OnApplicationShutdown {
     ) { }
 
     onModuleInit() {
+        const enabled = this.config.get<boolean>('queue.enabled') ?? true;
+        if (!enabled) {
+            this.logger.warn(`Queue disabled; skipping worker init for: ${ANSWER_EVALUATION_QUEUE}`);
+            return;
+        }
+
         this.logger.log(`Initializing worker for queue: ${ANSWER_EVALUATION_QUEUE}`);
 
         this.worker = new Worker(

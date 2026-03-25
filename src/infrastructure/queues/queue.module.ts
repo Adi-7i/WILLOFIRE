@@ -1,6 +1,6 @@
 import { Module, Global } from '@nestjs/common';
 import { Queue } from 'bullmq';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 import { RedisModule } from '../redis/redis.module';
 import { REDIS_CLIENT } from '../redis/redis.constants';
@@ -38,18 +38,30 @@ import { EvaluationWorker } from './workers/evaluation.worker';
         // ── BullMQ Queue Providers ────────────────────────────────────────────────
         {
             provide: PDF_PROCESSING_QUEUE,
-            useFactory: (redis) => new Queue(PDF_PROCESSING_QUEUE, { connection: redis }),
-            inject: [REDIS_CLIENT],
+            useFactory: (config: ConfigService, redis) => {
+                const enabled = config.get<boolean>('queue.enabled') ?? true;
+                if (!enabled) return null;
+                return new Queue(PDF_PROCESSING_QUEUE, { connection: redis });
+            },
+            inject: [ConfigService, REDIS_CLIENT],
         },
         {
             provide: MCQ_GENERATION_QUEUE,
-            useFactory: (redis) => new Queue(MCQ_GENERATION_QUEUE, { connection: redis }),
-            inject: [REDIS_CLIENT],
+            useFactory: (config: ConfigService, redis) => {
+                const enabled = config.get<boolean>('queue.enabled') ?? true;
+                if (!enabled) return null;
+                return new Queue(MCQ_GENERATION_QUEUE, { connection: redis });
+            },
+            inject: [ConfigService, REDIS_CLIENT],
         },
         {
             provide: ANSWER_EVALUATION_QUEUE,
-            useFactory: (redis) => new Queue(ANSWER_EVALUATION_QUEUE, { connection: redis }),
-            inject: [REDIS_CLIENT],
+            useFactory: (config: ConfigService, redis) => {
+                const enabled = config.get<boolean>('queue.enabled') ?? true;
+                if (!enabled) return null;
+                return new Queue(ANSWER_EVALUATION_QUEUE, { connection: redis });
+            },
+            inject: [ConfigService, REDIS_CLIENT],
         },
 
         // ── Services ─────────────────────────────────────────────────────────────

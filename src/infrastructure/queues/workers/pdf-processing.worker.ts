@@ -1,4 +1,5 @@
 import { Injectable, Inject, Logger, OnModuleInit, OnApplicationShutdown } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Worker, Job } from 'bullmq';
 import Redis from 'ioredis';
 import * as https from 'https';
@@ -21,6 +22,7 @@ export class PdfProcessingWorker implements OnModuleInit, OnApplicationShutdown 
     private worker!: Worker<PdfProcessingPayload, string, string>;
 
     constructor(
+        private readonly config: ConfigService,
         @Inject(REDIS_CLIENT) private readonly redis: Redis,
         @Inject(STORAGE_TOKEN) private readonly storageService: StorageService,
         private readonly pdfRepository: PdfRepository,
@@ -28,6 +30,12 @@ export class PdfProcessingWorker implements OnModuleInit, OnApplicationShutdown 
     ) { }
 
     onModuleInit() {
+        const enabled = this.config.get<boolean>('queue.enabled') ?? true;
+        if (!enabled) {
+            this.logger.warn(`Queue disabled; skipping worker init for: ${PDF_PROCESSING_QUEUE}`);
+            return;
+        }
+
         this.logger.log(`Initializing worker for queue: ${PDF_PROCESSING_QUEUE}`);
 
         this.worker = new Worker(

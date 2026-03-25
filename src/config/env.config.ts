@@ -28,11 +28,18 @@ export const dbConfig = registerAs('database', () => ({
 
 // ── Redis config ─────────────────────────────────────────────────────────────
 export const redisConfig = registerAs('redis', () => ({
+    enabled: (process.env.REDIS_ENABLED ?? 'true') === 'true',
+    url: process.env.REDIS_URL ?? undefined,
     host: process.env.REDIS_HOST ?? 'localhost',
     port: parseInt(process.env.REDIS_PORT ?? '6379', 10),
     username: process.env.REDIS_USERNAME ?? 'default',
     password: process.env.REDIS_PASSWORD ?? undefined,
     tls: process.env.REDIS_TLS ?? 'false',
+}));
+
+// ── Queue config ─────────────────────────────────────────────────────────────
+export const queueConfig = registerAs('queue', () => ({
+    enabled: (process.env.QUEUE_ENABLED ?? 'true') === 'true',
 }));
 
 // ── JWT config ──────────────────────────────────────────────────────────────

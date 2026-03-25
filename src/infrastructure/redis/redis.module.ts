@@ -21,16 +21,39 @@ import { RedisService } from './redis.service';
         {
             provide: REDIS_CLIENT,
             useFactory: (config: ConfigService): Redis => {
+                const enabled = config.get<boolean>('redis.enabled') ?? true;
+                if (!enabled) {
+                    const mockRedis = {
+                        status: 'end',
+                        ping: async () => 'DISABLED',
+                        get: async () => null,
+                        set: async () => 'OK',
+                        del: async () => 0,
+                        disconnect: () => undefined,
+                    };
+                    return mockRedis as unknown as Redis;
+                }
+
+                const redisUrl = config.get<string>('redis.url');
                 const host = config.get<string>('redis.host') ?? 'localhost';
                 const port = config.get<number>('redis.port') ?? 6379;
                 const password = config.get<string>('redis.password');
                 const useTls = config.get<string>('redis.tls') === 'true';
+
+                if (redisUrl) {
+                    return new Redis(redisUrl, {
+                        lazyConnect: true,
+                        retryStrategy: (times) => Math.min(times * 50, 2000),
+                        maxRetriesPerRequest: null,
+                    });
+                }
 
                 return new Redis({
                     host,
                     port,
                     password,
                     tls: useTls ? {} : undefined,
+                    lazyConnect: true,
                     // Retry strategy prevents fatal crashes on boot if Redis is down
                     retryStrategy: (times) => Math.min(times * 50, 2000),
                     maxRetriesPerRequest: null, // Required by BullMQ

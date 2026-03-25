@@ -1,5 +1,6 @@
-import { Injectable, Inject, Logger } from '@nestjs/common';
+import { Injectable, Inject, Logger, Optional, ServiceUnavailableException } from '@nestjs/common';
 import { Queue } from 'bullmq';
+import { ConfigService } from '@nestjs/config';
 
 import {
     PDF_PROCESSING_QUEUE,
@@ -58,17 +59,19 @@ export class QueueService {
      * We inject the raw BullMQ Queue instances here via custom tokens.
      */
     constructor(
-        @Inject(PDF_PROCESSING_QUEUE) private readonly pdfQueue: Queue<PdfProcessingPayload>,
-        @Inject(MCQ_GENERATION_QUEUE) private readonly mcqQueue: Queue<McqGenerationPayload>,
-        @Inject(ANSWER_EVALUATION_QUEUE) private readonly evalQueue: Queue<EvaluationPayload>,
+        private readonly config: ConfigService,
+        @Optional() @Inject(PDF_PROCESSING_QUEUE) private readonly pdfQueue?: Queue<PdfProcessingPayload> | null,
+        @Optional() @Inject(MCQ_GENERATION_QUEUE) private readonly mcqQueue?: Queue<McqGenerationPayload> | null,
+        @Optional() @Inject(ANSWER_EVALUATION_QUEUE) private readonly evalQueue?: Queue<EvaluationPayload> | null,
     ) { }
 
     /**
      * Queue a PDF for text extraction and chunking.
      */
     async enqueuePdfProcessingJob(payload: PdfProcessingPayload): Promise<string> {
+        this.assertQueueEnabled(this.pdfQueue, PDF_PROCESSING_QUEUE);
         const jobName = `process-pdf-${payload.pdfId}`;
-        const job = await this.pdfQueue.add(jobName, payload, this.defaultJobOptions);
+        const job = await this.pdfQueue!.add(jobName, payload, this.defaultJobOptions);
         this.logger.debug(`Enqueued [${jobName}] (Job ID: ${job.id})`);
         return job.id!;
     }
@@ -77,8 +80,9 @@ export class QueueService {
      * Queue MCQ generation logic across chunks for a given PDF.
      */
     async enqueueMcqGenerationJob(payload: McqGenerationPayload): Promise<string> {
+        this.assertQueueEnabled(this.mcqQueue, MCQ_GENERATION_QUEUE);
         const jobName = `generate-mcq-${payload.pdfId}`;
-        const job = await this.mcqQueue.add(jobName, payload, this.defaultJobOptions);
+        const job = await this.mcqQueue!.add(jobName, payload, this.defaultJobOptions);
         this.logger.debug(`Enqueued [${jobName}] (Job ID: ${job.id})`);
         return job.id!;
     }
@@ -87,9 +91,19 @@ export class QueueService {
      * Queue answer evaluation (image/pdf -> text logic, followed by LLM scoring).
      */
     async enqueueEvaluationJob(payload: EvaluationPayload): Promise<string> {
+        this.assertQueueEnabled(this.evalQueue, ANSWER_EVALUATION_QUEUE);
         const jobName = `evaluate-${payload.submissionId}`;
-        const job = await this.evalQueue.add(jobName, payload, this.defaultJobOptions);
+        const job = await this.evalQueue!.add(jobName, payload, this.defaultJobOptions);
         this.logger.debug(`Enqueued [${jobName}] (Job ID: ${job.id})`);
         return job.id!;
+    }
+
+    private assertQueueEnabled(queue: Queue | null | undefined, queueName: string): void {
+        const enabled = this.config.get<boolean>('queue.enabled') ?? true;
+        if (!enabled || !queue) {
+            throw new ServiceUnavailableException(
+                `Queue '${queueName}' is disabled. Set QUEUE_ENABLED=true and configure Redis to enable background jobs.`,
+            );
+        }
     }
 }
