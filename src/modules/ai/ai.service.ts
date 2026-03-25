@@ -93,8 +93,10 @@ export class AiService {
         const model = modelOverride || this.defaultModel;
 
         try {
-            this.logger.debug(`Sending ${messages.length} messages to model ${model}...`);
-            this.logger.debug(`Prompt Content: ${messages[messages.length - 1].content} `);
+            if (this.configService.get('NODE_ENV') !== 'production') {
+                this.logger.debug(`Sending ${messages.length} messages to model ${model}...`);
+                this.logger.debug(`Prompt Content: ${messages[messages.length - 1].content} `);
+            }
 
             const AI_TIMEOUT_MS = 30_000;
             const apiCall = this.llmClient.chat.completions.create({
@@ -114,7 +116,9 @@ export class AiService {
             const content = response.choices[0]?.message?.content || '';
             const tokensUsed = response.usage?.total_tokens || 0;
 
-            this.logger.debug(`generateCompletion success.Model: ${model}, Tokens: ${tokensUsed} `);
+            if (this.configService.get('NODE_ENV') !== 'production') {
+                this.logger.debug(`generateCompletion success. Model: ${model}, Tokens: ${tokensUsed} `);
+            }
 
             return {
                 content,
