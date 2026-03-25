@@ -2,8 +2,10 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, FileText, MessageSquare, Files, CheckCircle, Download, X } from 'lucide-react';
+import { useMemo, useState } from 'react';
+import { LayoutDashboard, FileText, MessageSquare, Files, CheckCircle, Download, X, Flame } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
 interface SidebarProps {
     isOpen: boolean;
@@ -21,37 +23,37 @@ const NAV_ITEMS = [
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
     const pathname = usePathname();
+    const [isHovered, setIsHovered] = useState(false);
+    const isExpanded = useMemo(() => isHovered, [isHovered]);
 
     return (
         <>
             {/* Mobile overlay */}
             {isOpen && (
                 <div
-                    className="fixed inset-0 z-40 bg-zinc-950/80 md:hidden"
+                    className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm md:hidden"
                     onClick={onClose}
                 />
             )}
 
-            {/* Sidebar sidebar */}
+            {/* Mobile sidebar */}
             <aside
-                className={`fixed inset-y-0 left-0 z-50 w-64 bg-[#1E2D4E] flex flex-col transition-transform duration-300 ease-in-out md:translate-x-0 ${isOpen ? 'translate-x-0' : '-translate-x-full'
-                    }`}
+                className={cn(
+                    'fixed inset-y-4 left-4 z-50 w-64 rounded-2xl border border-[#1F2937] bg-[#0B1120]/95 p-3 text-[#9CA3AF] shadow-[0_20px_45px_rgba(0,0,0,0.45)] backdrop-blur-xl transition-transform duration-300 ease-out md:hidden',
+                    isOpen ? 'translate-x-0' : '-translate-x-[120%]'
+                )}
             >
-                <div className="flex h-16 shrink-0 items-center justify-between px-6">
-                    <Link href="/dashboard" className="text-xl font-bold tracking-tight text-white flex gap-2 items-center">
-                        <div className="w-6 h-6 rounded bg-amber-500 shrink-0" />
+                <div className="mb-3 flex items-center justify-between px-2">
+                    <Link href="/dashboard" className="flex items-center gap-2 text-sm font-semibold text-[#E5E7EB]">
+                        <Flame className="h-5 w-5 text-[#38BDF8]" />
                         Willofire
                     </Link>
-                    <Button variant="ghost" size="icon" className="md:hidden text-zinc-400 hover:text-white hover:bg-white/10" onClick={onClose}>
+                    <Button variant="ghost" size="icon" className="text-[#9CA3AF] hover:bg-[#0F172A] hover:text-[#E5E7EB]" onClick={onClose}>
                         <X className="h-5 w-5" />
                         <span className="sr-only">Close sidebar</span>
                     </Button>
                 </div>
-
-                <nav className="flex-1 space-y-1 px-4 py-4 overflow-y-auto">
-                    <div className="text-xs font-semibold text-[#A9BAD0] uppercase tracking-wider mb-4 px-2">
-                        Menu
-                    </div>
+                <nav className="space-y-1 overflow-y-auto">
                     {NAV_ITEMS.map((item) => {
                         const isActive = pathname === item.href;
                         const Icon = item.icon;
@@ -60,14 +62,16 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                             <Link
                                 key={item.name}
                                 href={item.href}
-                                className={`group flex items-center rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${isActive
-                                    ? 'bg-[#2D4A7A] text-white'
-                                    : 'text-[#A9BAD0] hover:bg-white/5 hover:text-white'
-                                    }`}
+                                className={cn(
+                                    'group flex items-center rounded-xl px-3 py-2.5 text-sm font-medium transition-colors',
+                                    isActive
+                                        ? 'bg-[#111827] text-[#E5E7EB]'
+                                        : 'text-[#9CA3AF] hover:bg-[#111827]/70 hover:text-[#E5E7EB]'
+                                )}
+                                onClick={onClose}
                             >
                                 <Icon
-                                    className={`mr-3 h-5 w-5 flex-shrink-0 transition-colors ${isActive ? 'text-white' : 'text-[#A9BAD0] group-hover:text-white'
-                                        }`}
+                                    className={cn('mr-3 h-5 w-5 shrink-0', isActive ? 'text-[#38BDF8]' : 'text-[#9CA3AF]')}
                                     aria-hidden="true"
                                 />
                                 {item.name}
@@ -75,16 +79,68 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
                         );
                     })}
                 </nav>
+            </aside>
 
-                <div className="p-4 mt-auto">
-                    <div className="rounded-lg bg-white/5 p-4 border border-white/10">
-                        <p className="text-sm font-medium text-white">Upgrade to Pro</p>
-                        <p className="mt-1 text-xs text-[#A9BAD0]">Get unlimited mock tests and evaluations.</p>
-                        <Button className="w-full mt-3 bg-amber-500 hover:bg-amber-600 text-white border-0" size="sm">
-                            Upgrade
-                        </Button>
-                    </div>
-                </div>
+            {/* Desktop floating rail */}
+            <aside
+                className={cn(
+                    'fixed left-4 top-4 bottom-4 z-40 hidden rounded-[28px] border border-[#1F2937] bg-[#0B1120]/72 px-2 py-3 text-[#9CA3AF] shadow-[0_16px_40px_rgba(0,0,0,0.4)] backdrop-blur-xl transition-[width,background-color] duration-300 ease-out md:flex md:flex-col',
+                    isExpanded ? 'w-56 bg-[#0B1120]/84' : 'w-[72px]'
+                )}
+                onMouseEnter={() => setIsHovered(true)}
+                onMouseLeave={() => setIsHovered(false)}
+            >
+                <Link
+                    href="/dashboard"
+                    className={cn(
+                        'mb-4 flex h-11 items-center rounded-2xl transition-all duration-300',
+                        isExpanded ? 'gap-3 px-3 justify-start' : 'justify-center'
+                    )}
+                >
+                    <Flame className="h-5 w-5 shrink-0 text-[#38BDF8]" />
+                    <span
+                        className={cn(
+                            'overflow-hidden whitespace-nowrap text-sm font-semibold text-[#E5E7EB] transition-all duration-300',
+                            isExpanded ? 'max-w-[140px] opacity-100 translate-x-0' : 'max-w-0 opacity-0 -translate-x-1'
+                        )}
+                    >
+                        Willofire
+                    </span>
+                </Link>
+
+                <nav className="flex-1 space-y-1">
+                    {NAV_ITEMS.map((item) => {
+                        const isActive = pathname === item.href;
+                        const Icon = item.icon;
+
+                        return (
+                            <Link
+                                key={item.name}
+                                href={item.href}
+                                className={cn(
+                                    'group relative flex h-11 items-center rounded-2xl transition-all duration-300',
+                                    isExpanded ? 'justify-start gap-3 px-3' : 'justify-center',
+                                    isActive
+                                        ? 'bg-[#111827] text-[#E5E7EB]'
+                                        : 'text-[#9CA3AF] hover:bg-[#111827]/70 hover:text-[#E5E7EB]'
+                                )}
+                            >
+                                {isActive && (
+                                    <span className="absolute inset-0 rounded-2xl shadow-[0_0_0_1px_rgba(56,189,248,0.35),0_0_28px_rgba(37,99,235,0.18)]" />
+                                )}
+                                <Icon className={cn('relative z-10 h-5 w-5 shrink-0', isActive && 'text-[#38BDF8]')} />
+                                <span
+                                    className={cn(
+                                        'relative z-10 overflow-hidden whitespace-nowrap text-sm transition-all duration-300',
+                                        isExpanded ? 'max-w-[140px] opacity-100 translate-x-0' : 'max-w-0 opacity-0 -translate-x-1'
+                                    )}
+                                >
+                                    {item.name}
+                                </span>
+                            </Link>
+                        );
+                    })}
+                </nav>
             </aside>
         </>
     );
