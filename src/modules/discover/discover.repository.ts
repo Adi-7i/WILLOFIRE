@@ -6,7 +6,7 @@ import {
     DiscoverArticle,
     DiscoverArticleDocument,
 } from './discover.schema';
-import { DiscoverCategory, NormalizedArticle } from './discover.types';
+import { DiscoverCategory, FRESHNESS_THRESHOLD_HOURS, NormalizedArticle } from './discover.types';
 
 @Injectable()
 export class DiscoverRepository {
@@ -44,7 +44,14 @@ export class DiscoverRepository {
         limit = 30,
         skip = 0,
     ): Promise<DiscoverArticleDocument[]> {
-        const filter = category ? { category } : {};
+        const freshnessCutoff = new Date(Date.now() - (FRESHNESS_THRESHOLD_HOURS * 60 * 60 * 1000));
+        const filter: Record<string, unknown> = {
+            publishedAt: { $gte: freshnessCutoff },
+        };
+
+        if (category) {
+            filter.category = category;
+        }
 
         return this.articleModel
             .find(filter)

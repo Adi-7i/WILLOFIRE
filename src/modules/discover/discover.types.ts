@@ -17,6 +17,9 @@ export interface SearxngResult {
     image?: string;
     og_image?: string;
     publishedDate?: string;
+    published_date?: string;
+    published_at?: string;
+    published?: string;
     engine: string;
     parsed_url: string[];
     template: string;
@@ -36,13 +39,3 @@ export interface NormalizedArticle {
     publishedAt: Date;
     rankScore: number;
 }
-
-export const CATEGORY_QUERIES: Partial<Record<DiscoverCategory, string>> = {
-    // TODAYS_HEADLINES intentionally omitted, as it's aggregated from top articles, not searched directly in SearXNG
-    [DiscoverCategory.ECONOMY]: 'india economy inflation gdp rbi policy latest news',
-    [DiscoverCategory.POLITY]: 'supreme court constitution law india latest decision',
-    [DiscoverCategory.INTERNATIONAL_RELATIONS]: 'india diplomacy international relations geopolitics summit',
-    [DiscoverCategory.SCIENCE_TECH]: 'science technology breakthrough ai research space launch',
-    [DiscoverCategory.ENVIRONMENT]: 'climate change biodiversity environment policy india',
-    [DiscoverCategory.DEFENSE]: 'india military defense missile security strategy',
-};

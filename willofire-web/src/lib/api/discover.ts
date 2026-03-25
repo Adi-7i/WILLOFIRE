@@ -18,7 +18,7 @@ export interface DiscoverArticle {
 }
 
 export const discoverApi = {
-    getArticles: async (category?: string, limit: number = 30): Promise<DiscoverArticle[]> => {
+    getArticles: async (category?: BackendCategory, limit: number = 30): Promise<DiscoverArticle[]> => {
         const params: Record<string, string | number> = { limit };
         if (category) {
             params.category = category;

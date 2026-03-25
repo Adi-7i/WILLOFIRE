@@ -1,8 +1,13 @@
 'use client';
 
 import { useState } from 'react';
+import dynamic from 'next/dynamic';
 import { Sidebar } from '@/components/shared/Sidebar';
-import { Topbar } from '@/components/shared/Topbar';
+
+const Topbar = dynamic(
+    () => import('@/components/shared/Topbar').then((mod) => mod.Topbar),
+    { ssr: false }
+);
 
 export default function DashboardLayout({
     children,
