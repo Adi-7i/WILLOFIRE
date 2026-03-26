@@ -28,10 +28,10 @@ export function OptionCard({ index, text, state, onSelect, disabled = false }: O
             className={cn(
                 'w-full min-h-[78px] rounded-2xl border px-5 py-5 text-left transition-all duration-200',
                 'hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-70',
-                state === 'default' && 'border-[#232734] bg-[#151821] hover:border-[#364055] hover:bg-[#181C26]',
-                state === 'selected' && 'border-[#4E637E] bg-[#1A1F2A] shadow-[0_4px_20px_rgba(0,0,0,0.2)]',
-                state === 'correct' && 'border-[#2F7A68] bg-[#122420]',
-                state === 'incorrect' && 'border-[#8A444C] bg-[#2A1517]',
+                state === 'default' && 'border-[#232734] bg-[#151821] hover:border-[#3D475B]',
+                state === 'selected' && 'border-[#5A7394] bg-[rgba(46,74,98,0.2)] shadow-[0_0_0_1px_rgba(90,115,148,0.25),0_16px_30px_rgba(22,37,53,0.25)]',
+                state === 'correct' && 'border-[#2F7A68] bg-[rgba(46,109,95,0.2)]',
+                state === 'incorrect' && 'border-[#8A444C] bg-[rgba(122,59,66,0.2)]',
             )}
         >
             <div className="flex items-start justify-between gap-3">
@@ -39,10 +39,10 @@ export function OptionCard({ index, text, state, onSelect, disabled = false }: O
                     <span
                         className={cn(
                             'mt-0.5 inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs font-medium',
-                            state === 'default' && 'border-[#364055] text-[#9AA3B2]',
-                            state === 'selected' && 'border-[#6B85A1] bg-[#2E3C50] text-[#E6EAF2]',
-                            state === 'correct' && 'border-[#49B39A] bg-[#1F4D42] text-[#7BE0C9]',
-                            state === 'incorrect' && 'border-[#CD6F79] bg-[#5C2D32] text-[#E6AAB1]',
+                            state === 'default' && 'border-[#394255] text-[#9AA3B2]',
+                            state === 'selected' && 'border-[#7C95B8] text-[#DCE6F7]',
+                            state === 'correct' && 'border-[#49B39A] text-[#7BE0C9]',
+                            state === 'incorrect' && 'border-[#CD6F79] text-[#E6AAB1]',
                         )}
                     >
                         {labelForIndex(index)}
@@ -54,9 +54,9 @@ export function OptionCard({ index, text, state, onSelect, disabled = false }: O
                     <span
                         className={cn(
                             'mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full',
-                            showSuccess && 'bg-[#1F4D42] text-[#7BE0C9]',
-                            showError && 'bg-[#5C2D32] text-[#E6AAB1]',
-                            showSelected && 'bg-[#2E3C50] text-[#DCE6F7]',
+                            showSuccess && 'bg-[rgba(73,179,154,0.25)] text-[#7BE0C9]',
+                            showError && 'bg-[rgba(205,111,121,0.25)] text-[#E6AAB1]',
+                            showSelected && 'bg-[rgba(124,149,184,0.28)] text-[#DCE6F7]',
                         )}
                     >
                         {showError ? <X className="h-3.5 w-3.5" /> : <Check className="h-3.5 w-3.5" />}

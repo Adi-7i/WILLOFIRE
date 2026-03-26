@@ -7,11 +7,11 @@ interface QuestionHeaderProps {
 
 export function QuestionHeader({ number, text }: QuestionHeaderProps) {
     return (
-        <header className="space-y-6">
-            <span className="inline-flex rounded-full border border-[#2A3341] bg-[#161C27] px-3.5 py-1.5 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#9AA3B2]">
+        <header className="space-y-5">
+            <span className="inline-flex rounded-full bg-[#161C27] px-3.5 py-1 text-[11px] uppercase tracking-[0.14em] text-[#9AA3B2]">
                 QUESTION {number.toString().padStart(2, '0')}
             </span>
-            <h2 className="max-w-[900px] text-[2.1rem] font-medium leading-[1.65] tracking-[0.01em] text-[#E6EAF2] sm:text-[2.25rem]">
+            <h2 className="max-w-4xl text-[1.95rem] font-medium leading-[1.68] tracking-[0.005em] text-[#E6EAF2] sm:text-[2.2rem]">
                 {text}
             </h2>
         </header>

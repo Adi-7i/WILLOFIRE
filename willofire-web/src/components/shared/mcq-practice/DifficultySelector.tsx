@@ -29,10 +29,10 @@ export function DifficultySelector({ options, selected, onSelect, disabled = fal
                         disabled={disabled}
                         onClick={() => onSelect(option.value)}
                         className={cn(
-                            'rounded-full border px-3 py-2.5 text-[13.5px] font-medium transition-all duration-200',
+                            'rounded-full border px-3 py-2 text-[13px] transition-all duration-200',
                             isActive
-                                ? 'border-[#3F6E6A] bg-[#162523] text-[#E6EAF2] shadow-[0_0_0_1px_rgba(63,110,106,0.2)]'
-                                : 'border-[#232734] bg-transparent text-[#9AA3B2] hover:border-[#364055] hover:text-[#D4DBE5]',
+                                ? 'border-[#3F6E6A] bg-[rgba(63,110,106,0.22)] text-[#E6EAF2] shadow-[0_0_0_1px_rgba(63,110,106,0.2)]'
+                                : 'border-[#2A3040] bg-transparent text-[#9AA3B2] hover:border-[#394356] hover:text-[#D4DBE5]',
                             disabled && 'cursor-not-allowed opacity-65',
                         )}
                     >

@@ -23,7 +23,7 @@ export function NavigationControls({
     onNext,
 }: NavigationControlsProps) {
     return (
-        <div className="mt-12 flex items-center justify-between gap-4 border-t border-[#232734] pt-8 pb-4">
+        <div className="mt-10 flex items-center justify-between gap-4 border-t border-[#232734] pt-6">
             <button
                 type="button"
                 onClick={onPrevious}
@@ -41,8 +41,8 @@ export function NavigationControls({
                 className={cn(
                     'inline-flex h-11 items-center gap-2 rounded-full border px-5 text-sm transition-all duration-200',
                     flagged
-                        ? 'border-[#3D475B] bg-[#1A1F2A] text-[#E6EAF2]'
-                        : 'border-[#232734] bg-[#151821] text-[#9AA3B2] hover:border-[#364055] hover:text-[#D7DFEA]',
+                        ? 'border-[#4E637E] bg-[rgba(46,74,98,0.2)] text-[#E6EAF2]'
+                        : 'border-[#2A3040] bg-[#151821] text-[#9AA3B2] hover:border-[#364055] hover:text-[#D7DFEA]',
                     disabled && 'cursor-not-allowed opacity-60',
                 )}
             >
