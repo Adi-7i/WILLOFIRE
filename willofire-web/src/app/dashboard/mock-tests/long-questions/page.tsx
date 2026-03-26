@@ -49,14 +49,14 @@ export default function LongQuestionPracticePage() {
     return (
         <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div>
-                <h1 className="text-3xl font-bold tracking-tight text-slate-900">Long Question Practice</h1>
-                <p className="text-slate-500 mt-2">Generate subjective questions to practice comprehensive answers.</p>
+                <h1 className="text-3xl font-bold tracking-tight text-foreground">Long Question Practice</h1>
+                <p className="text-muted-foreground mt-2">Generate subjective questions to practice comprehensive answers.</p>
             </div>
 
-            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="rounded-xl border border-border bg-card p-6 shadow-sm">
                 <div className="grid gap-6 md:grid-cols-4 md:items-end">
                     <div className="md:col-span-1">
-                        <label className="text-sm font-medium text-slate-700 mb-2 block">Source Material</label>
+                        <label className="text-sm font-medium text-foreground/85 mb-2 block">Source Material</label>
                         <Select value={selectedPdfId} onValueChange={setSelectedPdfId}>
                             <SelectTrigger>
                                 <SelectValue placeholder="Select a PDF" />
@@ -77,7 +77,7 @@ export default function LongQuestionPracticePage() {
                     </div>
 
                     <div className="md:col-span-1">
-                        <label className="text-sm font-medium text-slate-700 mb-2 block">Questions</label>
+                        <label className="text-sm font-medium text-foreground/85 mb-2 block">Questions</label>
                         <Select value={questionCount} onValueChange={setQuestionCount}>
                             <SelectTrigger>
                                 <SelectValue placeholder="Count" />
@@ -91,7 +91,7 @@ export default function LongQuestionPracticePage() {
                     </div>
 
                     <div className="md:col-span-1">
-                        <label className="text-sm font-medium text-slate-700 mb-2 block">Marks per question</label>
+                        <label className="text-sm font-medium text-foreground/85 mb-2 block">Marks per question</label>
                         <Select value={marks} onValueChange={setMarks}>
                             <SelectTrigger>
                                 <SelectValue placeholder="Marks" />
@@ -108,7 +108,7 @@ export default function LongQuestionPracticePage() {
                         <Button
                             onClick={handleGenerate}
                             disabled={!selectedPdfId || isGenerating}
-                            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium"
+                            className="w-full wf-accent-gradient text-primary-foreground font-medium wf-soft-glow-hover"
                         >
                             {isGenerating ? 'Generating...' : 'Generate Questions'}
                         </Button>
@@ -118,9 +118,9 @@ export default function LongQuestionPracticePage() {
 
             {generatedQuestions ? (
                 <div className="space-y-6 pt-4 animate-in fade-in duration-500">
-                    <div className="flex items-center justify-between pb-2 border-b border-slate-200">
-                        <h2 className="text-xl font-bold text-slate-900">Practice Set</h2>
-                        <span className="text-sm font-medium text-slate-500 flex items-center gap-2">
+                    <div className="flex items-center justify-between pb-2 border-b border-border">
+                        <h2 className="text-xl font-bold text-foreground">Practice Set</h2>
+                        <span className="text-sm font-medium text-muted-foreground flex items-center gap-2">
                             <FileText className="w-4 h-4" />
                             {generatedQuestions.length} questions • {generatedQuestions.reduce((sum, q) => sum + q.marks, 0)} marks total
                         </span>
@@ -138,12 +138,12 @@ export default function LongQuestionPracticePage() {
                     </div>
                 </div>
             ) : (
-                <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 flex flex-col items-center justify-center p-12 text-center min-h-[300px]">
-                    <div className="w-16 h-16 bg-slate-100 text-slate-400 rounded-full flex items-center justify-center mb-4">
+                <div className="rounded-xl border border-dashed border-border bg-muted/35 flex flex-col items-center justify-center p-12 text-center min-h-[300px]">
+                    <div className="w-16 h-16 bg-muted/55 text-muted-foreground/80 rounded-full flex items-center justify-center mb-4">
                         <BookOpen className="h-8 w-8" />
                     </div>
-                    <h3 className="text-lg font-semibold text-slate-900">Ready to practice</h3>
-                    <p className="text-sm text-slate-500 mt-2 max-w-[300px]">
+                    <h3 className="text-lg font-semibold text-foreground">Ready to practice</h3>
+                    <p className="text-sm text-muted-foreground mt-2 max-w-[300px]">
                         Select a PDF, configure the format, and generate long-form questions to test your understanding.
                     </p>
                 </div>

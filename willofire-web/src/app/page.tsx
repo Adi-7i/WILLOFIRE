@@ -5,10 +5,10 @@ export default function HomePage() {
   return (
     <main className="flex-1 flex flex-col items-center justify-center p-6 text-center">
       <div className="max-w-2xl w-full space-y-8">
-        <h1 className="text-5xl font-extrabold tracking-tight sm:text-6xl text-zinc-50">
+        <h1 className="text-5xl font-extrabold tracking-tight sm:text-6xl text-foreground">
           Willofire
         </h1>
-        <p className="text-xl text-zinc-400">
+        <p className="text-xl text-muted-foreground">
           AI-powered exam practice platform
         </p>
 
