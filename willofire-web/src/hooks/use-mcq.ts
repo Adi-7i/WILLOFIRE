@@ -8,7 +8,7 @@ export const useMcqTests = () => {
     return useQuery({
         queryKey: MCQ_TESTS_QUERY_KEY,
         queryFn: mcqApi.list,
-        refetchInterval: 10000,
+        refetchInterval: 3000,
     });
 };
 

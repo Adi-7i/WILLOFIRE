@@ -1,4 +1,10 @@
-import { Injectable, Logger, InternalServerErrorException, RequestTimeoutException } from '@nestjs/common';
+import {
+    Injectable,
+    Logger,
+    InternalServerErrorException,
+    RequestTimeoutException,
+    ServiceUnavailableException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import OpenAI from 'openai';
 import { ChatCompletionMessageParam } from 'openai/resources/chat/completions';
@@ -14,6 +20,14 @@ import { Inject } from '@nestjs/common';
 export interface AiCompletionResult {
     content: string;
     tokensUsed: number;
+}
+
+interface GenerateCompletionOptions {
+    timeoutMs?: number;
+    maxRetries?: number;
+    retryDelayMs?: number;
+    maxTokens?: number;
+    temperature?: number;
 }
 
 /**
@@ -89,8 +103,14 @@ export class AiService {
     async generateCompletion(
         messages: ChatCompletionMessageParam[],
         modelOverride?: string,
+        options?: GenerateCompletionOptions,
     ): Promise<AiCompletionResult> {
         const model = modelOverride || this.defaultModel;
+        const timeoutMs = options?.timeoutMs ?? this.configService.get<number>('ai.llm.timeoutMs') ?? 120_000;
+        const maxRetries = options?.maxRetries ?? this.configService.get<number>('ai.llm.maxRetries') ?? 2;
+        const retryDelayMs = options?.retryDelayMs ?? this.configService.get<number>('ai.llm.retryDelayMs') ?? 1_500;
+        const maxTokens = options?.maxTokens ?? this.configService.get<number>('ai.llm.maxTokens') ?? 1_500;
+        const temperature = options?.temperature ?? 0.2;
 
         try {
             if (this.configService.get('NODE_ENV') !== 'production') {
@@ -98,36 +118,109 @@ export class AiService {
                 this.logger.debug(`Prompt Content: ${messages[messages.length - 1].content} `);
             }
 
-            const AI_TIMEOUT_MS = 30_000;
-            const apiCall = this.llmClient.chat.completions.create({
-                model,
-                messages,
-                temperature: 0.2, // Low temperature for factual output
-                max_tokens: 1500, // Sufficient for long answers
-            });
+            for (let attempt = 0; attempt <= maxRetries; attempt++) {
+                const controller = new AbortController();
+                const timeoutHandle = setTimeout(() => controller.abort(), timeoutMs);
 
-            const timeoutPromise = new Promise<never>((_, reject) =>
-                setTimeout(() => reject(new RequestTimeoutException('AI request timed out after 30 seconds')), AI_TIMEOUT_MS)
-            );
+                try {
+                    const response = await this.llmClient.chat.completions.create(
+                        {
+                            model,
+                            messages,
+                            temperature, // Low temperature for factual output
+                            max_tokens: maxTokens,
+                        },
+                        { signal: controller.signal },
+                    ) as OpenAI.Chat.Completions.ChatCompletion;
 
-            // @ts-ignore
-            const response = await Promise.race([apiCall, timeoutPromise]) as OpenAI.Chat.Completions.ChatCompletion;
+                    const content = response.choices[0]?.message?.content || '';
+                    const tokensUsed = response.usage?.total_tokens || 0;
 
-            const content = response.choices[0]?.message?.content || '';
-            const tokensUsed = response.usage?.total_tokens || 0;
+                    if (this.configService.get('NODE_ENV') !== 'production') {
+                        this.logger.debug(`generateCompletion success. Model: ${model}, Tokens: ${tokensUsed} `);
+                    }
 
-            if (this.configService.get('NODE_ENV') !== 'production') {
-                this.logger.debug(`generateCompletion success. Model: ${model}, Tokens: ${tokensUsed} `);
+                    return {
+                        content,
+                        tokensUsed,
+                    };
+                } catch (error) {
+                    const normalizedError = this.normalizeProviderError(error, timeoutMs);
+                    const isLastAttempt = attempt >= maxRetries;
+                    const shouldRetry = !isLastAttempt && this.isRetryableProviderError(normalizedError);
+
+                    if (shouldRetry) {
+                        const delay = retryDelayMs * Math.pow(2, attempt);
+                        this.logger.warn(
+                            `AI request failed (attempt ${attempt + 1}/${maxRetries + 1}). Retrying in ${delay}ms. Reason: ${normalizedError.message}`,
+                        );
+                        await this.sleep(delay);
+                        continue;
+                    }
+
+                    throw normalizedError;
+                } finally {
+                    clearTimeout(timeoutHandle);
+                }
             }
 
-            return {
-                content,
-                tokensUsed,
-            };
+            throw new InternalServerErrorException('Failed to generate AI response');
         } catch (error) {
             this.logger.error(`AI completion failed: ${(error as Error).message} `, (error as Error).stack);
+            if (error instanceof RequestTimeoutException || error instanceof ServiceUnavailableException) {
+                throw error;
+            }
+
             throw new InternalServerErrorException('Failed to generate AI response');
         }
+    }
+
+    private normalizeProviderError(error: unknown, timeoutMs: number): Error {
+        if (error instanceof RequestTimeoutException || error instanceof ServiceUnavailableException) {
+            return error;
+        }
+
+        const e = error as {
+            message?: string;
+            name?: string;
+            code?: string;
+            status?: number;
+            cause?: { code?: string };
+        };
+
+        const message = e.message ?? 'Unknown AI provider error';
+        const loweredMessage = message.toLowerCase();
+        const status = e.status;
+        const code = e.code ?? e.cause?.code;
+        const name = e.name ?? '';
+
+        const timedOut = loweredMessage.includes('timeout')
+            || loweredMessage.includes('timed out')
+            || code === 'ETIMEDOUT'
+            || code === 'UND_ERR_CONNECT_TIMEOUT'
+            || name === 'AbortError'
+            || status === 408;
+
+        if (timedOut) {
+            return new RequestTimeoutException(`AI request timed out after ${Math.floor(timeoutMs / 1000)} seconds`);
+        }
+
+        const retryableHttpStatus = status !== undefined && [429, 500, 502, 503, 504].includes(status);
+        const retryableNetworkError = ['ECONNRESET', 'ECONNREFUSED', 'EAI_AGAIN'].includes(code ?? '');
+
+        if (retryableHttpStatus || retryableNetworkError) {
+            return new ServiceUnavailableException(`AI provider temporarily unavailable: ${message}`);
+        }
+
+        return new InternalServerErrorException('Failed to generate AI response');
+    }
+
+    private isRetryableProviderError(error: Error): boolean {
+        return error instanceof RequestTimeoutException || error instanceof ServiceUnavailableException;
+    }
+
+    private sleep(ms: number): Promise<void> {
+        return new Promise((resolve) => setTimeout(resolve, ms));
     }
 
     /**
