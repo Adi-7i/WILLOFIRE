@@ -80,30 +80,15 @@ export class McqGenerationWorker implements OnModuleInit, OnApplicationShutdown 
                 throw new Error('No text chunks found for this PDF. Wait for processing to finish.');
             }
 
-            // 2. Take max chunks for context window
-            // Naive approach: take the first 5 elements for Phase 8.
-            const selectedChunks = chunks.slice(0, 5);
-            const contextString = this.buildBoundedContext(selectedChunks.map((c) => c.content), 12_000);
-
-            // 3. Render prompt
-            const userPrompt = MCQ_GENERATION_PROMPT.render({
-                context: contextString,
-                count: numQuestions,
+            // 2. Generate completion with fallback passes for noisy/oversized contexts.
+            const rawOutput = await this.generateQuestionsWithFallback(
+                chunks.map((c) => c.content),
+                numQuestions,
                 difficulty,
-            });
-
-            // 4. Generate completion
-            const result = await this.aiService.generateCompletion(
-                [
-                    { role: 'system', content: MCQ_GENERATION_PROMPT.system },
-                    { role: 'user', content: userPrompt },
-                ],
-                undefined,
-                { timeoutMs: 60_000, maxRetries: 1, retryDelayMs: 1_000, maxTokens: 1_500 },
             );
 
             // 5. Parse and normalize questions from AI JSON (with repair fallback)
-            const questions = await this.parseQuestionsWithRepair(result.content);
+            const questions = await this.parseQuestionsWithRepair(rawOutput);
 
             if (!Array.isArray(questions) || questions.length === 0) {
                 throw new Error('AI output was not a valid or populated JSON array.');
@@ -136,13 +121,86 @@ export class McqGenerationWorker implements OnModuleInit, OnApplicationShutdown 
             if (!chunk) continue;
             if (used >= maxChars) break;
 
+            const normalizedChunk = this.normalizeChunkText(chunk);
+            if (!normalizedChunk) continue;
+
             const remaining = maxChars - used;
-            const take = chunk.length > remaining ? chunk.slice(0, remaining) : chunk;
+            const take = normalizedChunk.length > remaining ? normalizedChunk.slice(0, remaining) : normalizedChunk;
             parts.push(take);
             used += take.length;
         }
 
         return parts.join('\n\n');
+    }
+
+    private normalizeChunkText(raw: string): string {
+        if (!raw) return '';
+
+        // Collapse OCR artifacts like: "T h e U n i t e d" -> "The United"
+        const collapsedLetters = raw.replace(/\b(?:[A-Za-z]\s+){4,}[A-Za-z]\b/g, (match) =>
+            match.replace(/\s+/g, ''),
+        );
+
+        return collapsedLetters
+            .replace(/\s*\/\s*/g, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
+    }
+
+    private async generateQuestionsWithFallback(
+        allChunks: string[],
+        count: number,
+        difficulty: string,
+    ): Promise<string> {
+        const attempts = [
+            { maxChars: 12_000, timeoutMs: 60_000, maxRetries: 1, maxTokens: 1_500 },
+            { maxChars: 8_000, timeoutMs: 45_000, maxRetries: 0, maxTokens: 1_200 },
+            { maxChars: 5_000, timeoutMs: 35_000, maxRetries: 0, maxTokens: 1_000 },
+        ];
+
+        let lastError: Error | null = null;
+
+        for (let i = 0; i < attempts.length; i++) {
+            const attempt = attempts[i];
+            const contextString = this.buildBoundedContext(allChunks, attempt.maxChars);
+
+            const userPrompt = MCQ_GENERATION_PROMPT.render({
+                context: contextString,
+                count,
+                difficulty,
+            });
+
+            try {
+                const result = await this.aiService.generateCompletion(
+                    [
+                        { role: 'system', content: MCQ_GENERATION_PROMPT.system },
+                        { role: 'user', content: userPrompt },
+                    ],
+                    undefined,
+                    {
+                        timeoutMs: attempt.timeoutMs,
+                        maxRetries: attempt.maxRetries,
+                        retryDelayMs: 1_000,
+                        maxTokens: attempt.maxTokens,
+                    },
+                );
+
+                if (i > 0) {
+                    this.logger.warn(`[McqWorker] Generation recovered on fallback attempt ${i + 1}/${attempts.length}.`);
+                }
+
+                return result.content;
+            } catch (error) {
+                lastError = error as Error;
+                const isLastAttempt = i === attempts.length - 1;
+
+                this.logger.warn(
+                    `[McqWorker] Generation attempt ${i + 1}/${attempts.length} failed (${(error as Error).message}). ${isLastAttempt ? 'No attempts left.' : 'Trying smaller context.'}`,
+                );
+            }
+        }
+
+        throw lastError ?? new Error('AI generation failed after all fallback attempts.');
     }
 
     private stripMarkdownFence(raw: string): string {

@@ -346,6 +346,15 @@ npm run lint               # Lint check
 
 ---
 
+## Backend API Docs
+
+- Full backend API documentation:
+  - `docs/backend-api.md`
+- Postman collection (import into Postman):
+  - `postman/WILLOFIRE-backend.postman_collection.json`
+
+---
+
 ## Deployment Readiness
 
 Willofire is engineered with production deployment in mind from day one — not as an afterthought.
