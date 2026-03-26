@@ -64,6 +64,10 @@ export const aiConfig = registerAs('ai', () => ({
         baseURL: process.env.LLM_AZURE_BASE_URL,
         apiVersion: process.env.LLM_AZURE_API_VERSION ?? '2024-12-01-preview',
         deployment: process.env.LLM_AZURE_DEPLOYMENT ?? 'gpt-4.1',
+        timeoutMs: parseInt(process.env.LLM_TIMEOUT_MS ?? '120000', 10),
+        maxRetries: parseInt(process.env.LLM_MAX_RETRIES ?? '2', 10),
+        retryDelayMs: parseInt(process.env.LLM_RETRY_DELAY_MS ?? '1500', 10),
+        maxTokens: parseInt(process.env.LLM_MAX_TOKENS ?? '1500', 10),
     },
     // ── Embedding (separate Azure OpenAI endpoint) ─────────────────────────
     embed: {

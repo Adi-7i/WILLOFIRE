@@ -55,6 +55,12 @@ export class QueueService {
         removeOnComplete: true, // Keep redis memory footprint low
     };
 
+    private readonly mcqJobOptions = {
+        attempts: 2,
+        backoff: { type: 'exponential', delay: 1000 },
+        removeOnComplete: true,
+    };
+
     /**
      * We inject the raw BullMQ Queue instances here via custom tokens.
      */
@@ -82,7 +88,7 @@ export class QueueService {
     async enqueueMcqGenerationJob(payload: McqGenerationPayload): Promise<string> {
         this.assertQueueEnabled(this.mcqQueue, MCQ_GENERATION_QUEUE);
         const jobName = `generate-mcq-${payload.pdfId}`;
-        const job = await this.mcqQueue!.add(jobName, payload, this.defaultJobOptions);
+        const job = await this.mcqQueue!.add(jobName, payload, this.mcqJobOptions);
         this.logger.debug(`Enqueued [${jobName}] (Job ID: ${job.id})`);
         return job.id!;
     }

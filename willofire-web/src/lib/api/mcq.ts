@@ -28,13 +28,27 @@ interface RawMcqTest {
     createdAt: string;
 }
 
+const normalizeId = (value: unknown): string => {
+    if (!value) return '';
+    if (typeof value === 'string') return value;
+    if (typeof value === 'object' && value !== null && 'toString' in value) {
+        return String((value as { toString: () => string }).toString());
+    }
+    return String(value);
+};
+
+const normalizeDate = (value: unknown): string => {
+    const parsed = new Date(String(value));
+    return Number.isNaN(parsed.getTime()) ? new Date(0).toISOString() : parsed.toISOString();
+};
+
 const mapTest = (item: RawMcqTest): McqTestDto => ({
-    id: item.id ?? item._id ?? '',
-    pdfId: item.pdfId,
+    id: normalizeId(item.id ?? item._id),
+    pdfId: normalizeId(item.pdfId),
     title: item.title,
     totalQuestions: item.totalQuestions,
     questions: item.questions,
-    createdAt: item.createdAt,
+    createdAt: normalizeDate(item.createdAt),
 });
 
 export const mcqApi = {

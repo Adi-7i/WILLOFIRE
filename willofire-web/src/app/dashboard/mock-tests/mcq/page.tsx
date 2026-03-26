@@ -27,7 +27,12 @@ export default function McqPracticePage() {
     const [timerSecondsLeft, setTimerSecondsLeft] = useState<number>(0);
     const [testStarted, setTestStarted] = useState<boolean>(false);
     const [awaitingGeneratedTest, setAwaitingGeneratedTest] = useState<boolean>(false);
-    const [generationRequest, setGenerationRequest] = useState<{ pdfId: string; requestedAt: number } | null>(null);
+    const [generationStatusMessage, setGenerationStatusMessage] = useState<string | null>(null);
+    const [generationRequest, setGenerationRequest] = useState<{
+        pdfId: string;
+        expectedCount: number;
+        existingTestIds: string[];
+    } | null>(null);
 
     const pdfsQuery = usePdfs();
     const testsQuery = useMcqTests();
@@ -93,15 +98,29 @@ export default function McqPracticePage() {
         const generatedTest = tests.find(
             (test) =>
                 test.pdfId === generationRequest.pdfId &&
-                new Date(test.createdAt).getTime() >= generationRequest.requestedAt - 3000,
+                test.totalQuestions === generationRequest.expectedCount &&
+                !generationRequest.existingTestIds.includes(test.id),
         );
 
         if (!generatedTest) return;
 
         setAwaitingGeneratedTest(false);
         setGenerationRequest(null);
+        setGenerationStatusMessage(null);
         initializeTestSession(generatedTest.id, generatedTest.totalQuestions);
     }, [awaitingGeneratedTest, generationRequest, initializeTestSession, tests]);
+
+    useEffect(() => {
+        if (!awaitingGeneratedTest) return;
+
+        const timeoutId = window.setTimeout(() => {
+            setAwaitingGeneratedTest(false);
+            setGenerationRequest(null);
+            setGenerationStatusMessage('MCQ generation is taking longer than expected. Please try again.');
+        }, 180000);
+
+        return () => window.clearTimeout(timeoutId);
+    }, [awaitingGeneratedTest]);
 
     const handleSubmit = useCallback(async () => {
         if (!activeTest || isSubmitting) return;
@@ -143,6 +162,7 @@ export default function McqPracticePage() {
         }
 
         if (selectedPdfIds.length === 0) return;
+        setGenerationStatusMessage(null);
 
         const primaryPdfId = selectedPdfIds[0];
 
@@ -156,7 +176,11 @@ export default function McqPracticePage() {
         }
 
         setAwaitingGeneratedTest(true);
-        setGenerationRequest({ pdfId: primaryPdfId, requestedAt: Date.now() });
+        setGenerationRequest({
+            pdfId: primaryPdfId,
+            expectedCount: questionCount,
+            existingTestIds: tests.map((test) => test.id),
+        });
 
         try {
             await generateMutation.mutateAsync({
@@ -168,6 +192,7 @@ export default function McqPracticePage() {
         } catch {
             setAwaitingGeneratedTest(false);
             setGenerationRequest(null);
+            setGenerationStatusMessage('Unable to generate MCQ right now. Please retry in a moment.');
         }
     };
 
@@ -311,6 +336,9 @@ export default function McqPracticePage() {
 
                         {generateMutation.isError && !testStarted && (
                             <p className="text-sm text-red-300">Unable to start assessment. Please try again.</p>
+                        )}
+                        {!testStarted && generationStatusMessage && (
+                            <p className="text-sm text-amber-300">{generationStatusMessage}</p>
                         )}
                     </div>
                 )}
