@@ -1,55 +1,65 @@
 'use client';
 
-import Link from 'next/link';
-import { BookOpen, FileText } from 'lucide-react';
+import { AnalyticsCard } from '@/components/shared/mock-tests/AnalyticsCard';
+import { PracticeCard } from '@/components/shared/mock-tests/PracticeCard';
+import { SectionHeader } from '@/components/shared/mock-tests/SectionHeader';
 
-export default function MockTestsLandingPage() {
+const practiceCards = [
+    {
+        title: 'MCQ Practice',
+        description: 'Test your conceptual clarity with exam-level multiple choice questions generated from your material.',
+        features: ['Instant scoring', 'Explanation-based learning', 'Timed environment'],
+        ctaLabel: 'Start MCQ Test →',
+        href: '/dashboard/mock-tests/mcq',
+        badge: 'Recommended',
+    },
+    {
+        title: 'Answer Writing Practice',
+        description: 'Develop structured answers with AI-based evaluation and feedback.',
+        features: ['AI evaluation', 'Structure feedback', 'Model answers'],
+        ctaLabel: 'Start Writing Test →',
+        href: '/dashboard/mock-tests/long-questions',
+        badge: 'Advanced',
+    },
+];
+
+const analyticsCards = [
+    { subject: 'Polity', percentage: 82, note: 'Concept clarity: High' },
+    { subject: 'History', percentage: 71, note: 'Application: Improving' },
+    { subject: 'Geography', percentage: 76, note: 'Concept clarity: High' },
+    { subject: 'Economy', percentage: 68, note: 'Application: Improving' },
+];
+
+export default function MockTestsPage() {
     return (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight text-foreground">Mock Tests</h1>
-                <p className="text-muted-foreground mt-2">Practice with AI-generated tests from your study materials.</p>
-            </div>
+        <div className="space-y-8 pb-4 text-[#E6EAF2] animate-in fade-in slide-in-from-bottom-2 duration-500">
+            <SectionHeader
+                eyebrow="AI GENERATED FROM YOUR NOTES"
+                title="Mock Tests"
+                description="Practice like the real exam environment. AI generates personalized assessments based on your study material."
+                stats={[
+                    { label: 'Average Score', value: '78%' },
+                    { label: 'Tests Completed', value: '24' },
+                ]}
+            />
 
-            <div className="grid gap-6 md:grid-cols-2">
-                <div className="rounded-xl border border-[#2E4A62]/55 bg-card shadow-sm overflow-hidden flex flex-col relative group hover:border-[#3F6E6A]/50 transition-colors wf-soft-glow-hover">
-                    <div className="p-6 flex-1">
-                        <div className="w-12 h-12 bg-[rgba(46,74,98,0.22)] text-[#93ADBF] rounded-xl flex items-center justify-center mb-4">
-                            <BookOpen className="h-6 w-6" />
-                        </div>
-                        <h3 className="text-lg font-bold text-foreground mb-2">MCQ Practice</h3>
-                        <p className="text-sm text-muted-foreground mb-6 font-medium">
-                            Test your objective knowledge with AI-generated multiple choice questions. Receive instant scoring and detailed explanations.
-                        </p>
-                    </div>
-                    <div className="p-6 pt-0 mt-auto">
-                        <Link href="/dashboard/mock-tests/mcq" className="w-full">
-                            <button className="w-full rounded-md wf-accent-gradient px-4 py-2 text-primary-foreground font-medium transition-colors h-11 wf-soft-glow-hover">
-                                Start MCQ Practice
-                            </button>
-                        </Link>
-                    </div>
+            <section className="space-y-4">
+                <div className="grid gap-5 lg:grid-cols-2">
+                    {practiceCards.map((card) => (
+                        <PracticeCard key={card.title} {...card} />
+                    ))}
                 </div>
+            </section>
 
-                <div className="rounded-xl border border-[#2E4A62]/55 bg-card shadow-sm overflow-hidden flex flex-col relative group hover:border-[#3F6E6A]/50 transition-colors wf-soft-glow-hover">
-                    <div className="p-6 flex-1">
-                        <div className="w-12 h-12 bg-[rgba(46,74,98,0.22)] text-[#93ADBF] rounded-xl flex items-center justify-center mb-4">
-                            <FileText className="h-6 w-6" />
-                        </div>
-                        <h3 className="text-lg font-bold text-foreground mb-2">Long Question Practice</h3>
-                        <p className="text-sm text-muted-foreground mb-6 font-medium">
-                            Develop comprehensive answers with structured subjective questions. Simulate real exam conditions with generated prompts.
-                        </p>
-                    </div>
-                    <div className="p-6 pt-0 mt-auto">
-                        <Link href="/dashboard/mock-tests/long-questions" className="w-full">
-                            <button className="w-full rounded-md wf-accent-gradient px-4 py-2 text-primary-foreground font-medium transition-colors h-11 wf-soft-glow-hover">
-                                Start Long Question Practice
-                            </button>
-                        </Link>
-                    </div>
+            <section className="rounded-3xl border border-[#232734] bg-[#151821] p-6 sm:p-7">
+                <h2 className="text-xl font-semibold tracking-[0.02em] text-[#E6EAF2]">Recent Performance Analytics</h2>
+
+                <div className="mt-5 grid gap-3 md:grid-cols-2 xl:grid-cols-4">
+                    {analyticsCards.map((card) => (
+                        <AnalyticsCard key={card.subject} {...card} />
+                    ))}
                 </div>
-            </div>
+            </section>
         </div>
     );
 }
