@@ -61,7 +61,7 @@ export function ChatInputBar({
                         className="h-9 rounded-lg wf-accent-gradient px-4 text-primary-foreground transition-all duration-300 hover:-translate-y-0.5 wf-soft-glow-hover disabled:opacity-50"
                     >
                         <SendHorizonal className="h-4 w-4" />
-                        {isLoading ? 'Working...' : 'Send'}
+                        {isLoading ? 'Analyzing...' : 'Send'}
                     </Button>
                 </div>
             </div>
